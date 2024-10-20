@@ -1,103 +1,127 @@
 /* PdfUpload.css */
 
+/* Container for the entire PDF upload section */
 .pdf-upload-container {
-    padding: 2rem;
-    background-color: #ffffff;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-  
-  .pdf-upload-container h2 {
-    font-size: 1.5rem;
-    font-weight: bold;
-    margin-bottom: 1rem;
-  }
-  
-  .pdf-upload-container p {
-    font-size: 0.875rem;
-    color: #6b7280;
-    margin-bottom: 1.5rem;
-  }
-  
-  .drag-drop-area {
-    border: 2px dashed #9ca3af;
-    border-radius: 8px;
-    padding: 2rem;
-    text-align: center;
-    color: #6b7280;
-    margin-bottom: 1rem;
-    position: relative;
-    transition: background-color 0.3s, border-color 0.3s;
-  }
-  
-  .drag-drop-area:hover {
-    background-color: #f3f4f6;
-    border-color: #6b7280;
-  }
-  
-  .file-input {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-  }
-  
-  .upload-button {
-    display: flex;
-    align-items: center;
-    background-color: #3b82f6;
-    color: #ffffff;
-    font-weight: bold;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 0.375rem;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  
-  .upload-button:hover {
-    background-color: #2563eb;
-  }
-  
-  .upload-button.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  .loader-spin {
-    animation: spin 1s linear infinite;
-  }
-  
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-  
-  .status-message {
-    margin-top: 1rem;
-    font-size: 0.875rem;
-    color: #6b7280;
-  }
-  
+  padding: 2rem;
+  background-color: #f9fafb;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  align-items: center;
+  max-width: 600px;
+  margin: 0 auto;
+  font-family: 'Roboto', sans-serif;  /* Professional font */
+}
+
+/* Heading */
+.pdf-upload-container h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+/* Instructions for the user */
+.pdf-upload-container .instructions {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+}
+
+/* Drag and drop area */
 .drag-drop-area {
-    border: 2px dashed #9ca3af;
-    border-radius: 8px;
-    padding: 2rem;
-    text-align: center;
-    color: #6b7280;
-    margin-bottom: 1rem;
-    position: relative;
-    transition: background-color 0.3s, border-color 0.3s;
-  }
-  
-  .drag-drop-area.drag-over {
-    background-color: #e5e7eb;
-    border-color: #6b7280;
-  }
-  
+  border: 2px dashed #3b82f6;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+  margin-bottom: 1rem;
+  position: relative;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+/* Error border when invalid file is selected */
+.drag-drop-area.error-border {
+  border-color: #ef4444;
+}
+
+/* Hover effect on drag over */
+.drag-drop-area:hover {
+  background-color: #f1f5f9;
+  border-color: #2563eb;
+}
+
+/* Hidden file input */
+.file-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Upload button */
+.upload-button {
+  display: flex;
+  align-items: center;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-weight: bold;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  width: 100%;
+  justify-content: center;
+}
+
+/* Button hover effect */
+.upload-button:hover {
+  background-color: #1d4ed8;
+}
+
+/* Disabled button state */
+.upload-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Status and error messages */
+.status-message {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: #10b981;
+}
+
+.error-message {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: #ef4444;
+}
+
+/* Progress bar container */
+.progress-container {
+  margin: 1rem 0;
+  height: 20px;
+  background-color: #e5e7eb;
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #3b82f6;
+  transition: width 0.3s;
+}
+
+/* Loading spinner animation */
+.loader-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

@@ -48,7 +48,11 @@ const Chatbot = () => {
       {/* Chat Messages */}
       <div className="chat-messages" ref={chatContainerRef}>
         {conversation.map((msg, index) => (
-          <div key={index} className={`clearfix ${msg.role === 'user' ? 'user-bubble' : 'bot-bubble'}`}>
+          <div
+            key={index}
+            className={msg.role === 'user' ? 'user-bubble' : 'bot-bubble'}
+            data-sender={msg.role === 'user' ? 'You' : 'Bot'}
+          >
             {msg.content}
           </div>
         ))}
