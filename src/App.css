@@ -3,28 +3,47 @@
 body {
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f3f4f6;
+  background-color: #FFFFFF; /* Update to white background */
 }
 
 .app-container {
   display: flex;
+  flex-direction: column;
   height: 100vh;
 }
 
-.left-panel {
-  width: 50%;
-  display: flex;
-  justify-content: center;  /* Horizontal center */
-  align-items: center;  /* Vertical center */
+.right-panel {
+  width: 100%;
   padding: 1rem;
   box-sizing: border-box;
+  background-color: #F5F5F7; /* Update to light grayish-blue */
+  display: flex;
+  flex-direction: column;
+}
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* This will horizontally center the text */
+  padding: 15px 20px;
+  border-radius: 15px;
+  background-color: #f9f1f0;
+  color: rgb(0, 0, 0);
+  position: relative;
+}
+
+.logo {
+  height: 50px;
+  position: absolute;
+  left: 20px; /* Position the logo on the left side */
+}
+
+.title {
+  font-size: 24px;
+  text-align: center; /* Center the text */
 }
 
 .right-panel {
-  width: 50%;
-  padding: 1rem;
-  box-sizing: border-box;
-  background-color: #f1f5f9;
-  display: flex;
-  flex-direction: column;
+  flex: 1;
+  padding: 20px;
 }

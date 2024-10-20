@@ -1,27 +1,26 @@
-// App.js
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import PdfUpload from './PdfUpload';
 import Chatbot from './Chatbot';
 import './App.css'; // Import global CSS
+import logo from './logo.svg'; // Update the path accordingly
 
 const App = () => {
   return (
     <Router>
       <div className="app-container">
-        {/* Left Side - PDF Upload */}
-        <div className="left-panel">
-          <PdfUpload />
+        {/* Title bar */}
+        <div className="titlebar">
+          <img src={logo} alt="Logo" className="logo" />
+          <h1 className="title"> </h1>
         </div>
 
-        {/* Right Side - Chatbot */}
+        {/* Chatbot with PDF upload functionality integrated */}
         <div className="right-panel">
           <Chatbot />
         </div>
       </div>
 
       <Routes>
-        <Route path="/upload" element={<PdfUpload />} />
         <Route path="/chatbot" element={<Chatbot />} />
       </Routes>
     </Router>

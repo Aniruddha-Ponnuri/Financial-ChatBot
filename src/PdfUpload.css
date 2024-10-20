@@ -3,13 +3,37 @@
 /* Container for the entire PDF upload section */
 .pdf-upload-container {
   padding: 2rem;
-  background-color: #f9fafb;
+  background-color: rgba(255, 255, 255, 0.6); /* Transparent background */
+  backdrop-filter: blur(10px); /* Blur effect */
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
   align-items: center;
   max-width: 600px;
   margin: 0 auto;
-  font-family: 'Roboto', sans-serif;  /* Professional font */
+  font-family: 'Roboto', sans-serif;
+}
+
+.instructions {
+  font-size: 0.875rem;
+  color: #6B7280;
+}
+
+.drag-drop-area {
+  border: 2px dashed #F06529;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.file-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 
 /* Heading */
@@ -23,17 +47,17 @@
 /* Instructions for the user */
 .pdf-upload-container .instructions {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: #6B7280;
   margin-bottom: 1.5rem;
 }
 
 /* Drag and drop area */
 .drag-drop-area {
-  border: 2px dashed #3b82f6;
+  border: 2px dashed #F06529; /* Orange dashed border */
   border-radius: 8px;
   padding: 2rem;
   text-align: center;
-  color: #6b7280;
+  color: #6B7280;
   margin-bottom: 1rem;
   position: relative;
   transition: background-color 0.3s, border-color 0.3s;
@@ -41,13 +65,13 @@
 
 /* Error border when invalid file is selected */
 .drag-drop-area.error-border {
-  border-color: #ef4444;
+  border-color: #EF4444;
 }
 
 /* Hover effect on drag over */
 .drag-drop-area:hover {
-  background-color: #f1f5f9;
-  border-color: #2563eb;
+  background-color: #F5F5F7; /* Light grayish-blue hover */
+  border-color: #F06529; /* Orange hover */
 }
 
 /* Hidden file input */
@@ -65,8 +89,8 @@
 .upload-button {
   display: flex;
   align-items: center;
-  background-color: #2563eb;
-  color: #ffffff;
+  background-color: #F06529; /* Orange button */
+  color: #FFFFFF;
   font-weight: bold;
   padding: 0.75rem 1.5rem;
   border: none;
@@ -79,7 +103,7 @@
 
 /* Button hover effect */
 .upload-button:hover {
-  background-color: #1d4ed8;
+  background-color: #D9531E; /* Darker orange hover */
 }
 
 /* Disabled button state */
@@ -92,20 +116,20 @@
 .status-message {
   margin-top: 1rem;
   font-size: 0.875rem;
-  color: #10b981;
+  color: #10B981;
 }
 
 .error-message {
   margin-top: 1rem;
   font-size: 0.875rem;
-  color: #ef4444;
+  color: #EF4444;
 }
 
 /* Progress bar container */
 .progress-container {
   margin: 1rem 0;
   height: 20px;
-  background-color: #e5e7eb;
+  background-color: #E5E7EB;
   border-radius: 10px;
   position: relative;
   overflow: hidden;
@@ -113,7 +137,7 @@
 
 .progress-bar {
   height: 100%;
-  background-color: #3b82f6;
+  background-color: #3B82F6;
   transition: width 0.3s;
 }
 

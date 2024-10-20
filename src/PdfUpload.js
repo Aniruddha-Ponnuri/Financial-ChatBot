@@ -1,6 +1,6 @@
+// PdfUpload.js
 import React, { useState } from 'react';
 import axios from 'axios';
-import { ArrowUpCircle, Loader } from 'lucide-react';
 import './PdfUpload.css';  // Import the new CSS file
 
 const PdfUpload = () => {
@@ -15,34 +15,20 @@ const PdfUpload = () => {
     if (file && file.type === 'application/pdf') {
       setPdfFile(file);
       setError('');
+      uploadPdf(file);  // Automatically trigger the upload
     } else {
       setError('Please upload a valid PDF file.');
     }
   };
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file && file.type === 'application/pdf') {
-      setPdfFile(file);
-      setError('');
-    } else {
-      setError('Please upload a valid PDF file.');
-    }
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
-
-  const uploadPdf = async () => {
-    if (!pdfFile) {
+  const uploadPdf = async (file) => {
+    if (!file) {
       setError('No file selected. Please select a PDF file.');
       return;
     }
 
     const formData = new FormData();
-    formData.append('file', pdfFile);
+    formData.append('file', file);
 
     try {
       setLoading(true); // Show loading indicator
@@ -68,12 +54,10 @@ const PdfUpload = () => {
 
   return (
     <div className="pdf-upload-container">
-      <h2>Upload PDF</h2>
       <p className="instructions">Supported formats: PDF. Max file size: 10MB.</p>
       <div
         className={`drag-drop-area ${error ? 'error-border' : ''}`}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
+        onDragOver={(e) => e.preventDefault()}
       >
         {pdfFile ? (
           <p>{pdfFile.name}</p>
@@ -94,15 +78,6 @@ const PdfUpload = () => {
           <span>{progress}%</span>
         </div>
       )}
-
-      <button
-        onClick={uploadPdf}
-        disabled={loading} // Disable button during upload
-        className={`upload-button ${loading ? 'disabled' : ''}`}
-      >
-        {loading ? <Loader className="loader-spin mr-2" /> : <ArrowUpCircle className="mr-2" />}
-        {loading ? 'Uploading...' : 'Upload PDF'}
-      </button>
 
       {statusMessage && <p className="status-message">{statusMessage}</p>}
       {error && <p className="error-message">{error}</p>}
