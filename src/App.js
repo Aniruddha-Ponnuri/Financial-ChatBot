@@ -1,19 +1,21 @@
+// App.js
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PdfUpload from './PdfUpload';
 import Chatbot from './Chatbot';
+import './App.css'; // Import global CSS
 
 const App = () => {
   return (
     <Router>
-      <div style={{ display: 'flex', height: '100vh' }}>
+      <div className="app-container">
         {/* Left Side - PDF Upload */}
-        <div style={{ width: '50%', padding: '10px', boxSizing: 'border-box' }}>
+        <div className="left-panel">
           <PdfUpload />
         </div>
 
         {/* Right Side - Chatbot */}
-        <div style={{ width: '50%', padding: '10px', boxSizing: 'border-box', backgroundColor: '#f1f1f1', display: 'flex', flexDirection: 'column' }}>
+        <div className="right-panel">
           <Chatbot />
         </div>
       </div>

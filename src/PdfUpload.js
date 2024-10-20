@@ -1,13 +1,37 @@
+// PdfUpload.js
 import React, { useState } from 'react';
 import axios from 'axios';
-import { ArrowUpCircle } from 'lucide-react';
+import { ArrowUpCircle, Loader } from 'lucide-react';
+import './PdfUpload.css'; // Import the CSS file
 
 const PdfUpload = () => {
   const [pdfFile, setPdfFile] = useState(null);
   const [statusMessage, setStatusMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const handleFileChange = (e) => {
     setPdfFile(e.target.files[0]);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') {
+      setPdfFile(file);
+    } else {
+      alert('Please upload a PDF file.');
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
   };
 
   const uploadPdf = async () => {
@@ -19,6 +43,7 @@ const PdfUpload = () => {
     formData.append('file', pdfFile);
 
     try {
+      setLoading(true); // Show loading indicator
       setStatusMessage('Uploading PDF...');
       const response = await axios.post('http://localhost:5000/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -26,32 +51,42 @@ const PdfUpload = () => {
       setStatusMessage(response.data.message);
     } catch (error) {
       setStatusMessage('Error uploading PDF');
+    } finally {
+      setLoading(false); // Hide loading indicator
     }
   };
 
   return (
-    <div className="p-8 bg-white shadow-lg">
-      <h2 className="text-2xl font-bold mb-6">Upload PDF</h2>
-      <div className="mb-4">
+    <div className="pdf-upload-container">
+      <h2>Upload PDF</h2>
+      <p>Supported formats: PDF. Max file size: 10MB.</p>
+      <div 
+        className={`drag-drop-area ${isDragOver ? 'drag-over' : ''}`}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
+        {pdfFile ? (
+          <p>{pdfFile.name}</p>
+        ) : (
+          <p>Drag and drop a PDF file here, or click to select a file.</p>
+        )}
         <input 
           type="file" 
           onChange={handleFileChange} 
-          className="block w-full text-sm text-gray-500
-            file:mr-4 file:py-2 file:px-4
-            file:rounded-full file:border-0
-            file:text-sm file:font-semibold
-            file:bg-blue-50 file:text-blue-700
-            hover:file:bg-blue-100"
+          accept="application/pdf"  // Restrict to PDF files
+          className="file-input"
         />
       </div>
       <button 
         onClick={uploadPdf}
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center"
+        disabled={loading}  // Disable button during upload
+        className={`upload-button ${loading ? 'disabled' : ''}`}
       >
-        <ArrowUpCircle className="mr-2" />
-        Upload PDF
+        {loading ? <Loader className="loader-spin mr-2" /> : <ArrowUpCircle className="mr-2" />}
+        {loading ? 'Uploading...' : 'Upload PDF'}
       </button>
-      {statusMessage && <p className="mt-4 text-sm text-gray-600">{statusMessage}</p>}
+      {statusMessage && <p className="status-message">{statusMessage}</p>}
     </div>
   );
 };

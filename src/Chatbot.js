@@ -1,11 +1,14 @@
+// Chatbot.js
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Send } from 'lucide-react';
+import { Send, Loader } from 'lucide-react';
+import './Chatbot.css'; // Import the CSS file
 
 const Chatbot = () => {
   const [question, setQuestion] = useState('');
   const [conversation, setConversation] = useState([]);
   const [summarizedHistory, setSummarizedHistory] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const chatContainerRef = useRef(null);
 
@@ -21,6 +24,7 @@ const Chatbot = () => {
       return;
     }
     try {
+      setLoading(true);  // Show loading indicator
       const newConversation = [...conversation, { role: 'user', content: question }];
       setConversation(newConversation);
 
@@ -34,6 +38,8 @@ const Chatbot = () => {
       setQuestion('');
     } catch (error) {
       console.error('Error asking question');
+    } finally {
+      setLoading(false);  // Hide loading indicator
     }
   };
 
@@ -56,70 +62,17 @@ const Chatbot = () => {
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           className="message-input"
+          disabled={loading}  // Disable input while loading
         />
         <button 
           onClick={handleAskQuestion}
-          className="ml-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center"
+          disabled={loading}  // Disable button while loading
+          className={`ask-button ${loading ? 'disabled' : ''}`}
         >
-          <Send className="mr-2" />
-          Ask
+          {loading ? <Loader className="loader-spin mr-2" /> : <Send className="mr-2" />}
+          {loading ? 'Asking...' : 'Ask'}
         </button>
       </div>
-
-      {/* Inline Styles */}
-      <style jsx global>{`
-        .chat-container {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-          justify-content: space-between;
-        }
-        .chat-messages {
-          flex-grow: 1;
-          overflow-y: auto;
-          padding: 10px;
-        }
-        .footer {
-          display: flex;
-          padding: 10px;
-          background-color: #717171;
-          border-radius: 10px;
-          align-items: center;
-          position: relative;
-        }
-        .message-input {
-          flex-grow: 1;
-          padding: 8px;
-          border-radius: 5px;
-          border: 1px solid #ccc;
-          color: #1c1c1c;
-        }
-        .user-bubble {
-          background-color: #007bff;
-          color: white;
-          padding: 10px;
-          border-radius: 10px;
-          margin-bottom: 10px;
-          width: fit-content;
-          max-width: 80%;
-          float: right;
-          clear: both;
-        }
-        .bot-bubble {
-          background-color: #1e1e1e;
-          padding: 10px;
-          border-radius: 10px;
-          margin-bottom: 10px;
-          width: fit-content;
-          max-width: 80%;
-          color: white;
-          float: left;
-          clear: both;
-        }
-        .clearfix {
-          overflow: auto;
-        }
-      `}</style>
     </div>
   );
 };
