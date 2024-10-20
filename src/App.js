@@ -1,25 +1,29 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import PdfUpload from './PdfUpload';
+import Chatbot from './Chatbot';
 
-function App() {
+const App = () => {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <div style={{ display: 'flex', height: '100vh' }}>
+        {/* Left Side - PDF Upload */}
+        <div style={{ width: '50%', padding: '10px', boxSizing: 'border-box' }}>
+          <PdfUpload />
+        </div>
+
+        {/* Right Side - Chatbot */}
+        <div style={{ width: '50%', padding: '10px', boxSizing: 'border-box', backgroundColor: '#f1f1f1', display: 'flex', flexDirection: 'column' }}>
+          <Chatbot />
+        </div>
+      </div>
+
+      <Routes>
+        <Route path="/upload" element={<PdfUpload />} />
+        <Route path="/chatbot" element={<Chatbot />} />
+      </Routes>
+    </Router>
   );
-}
+};
 
 export default App;
