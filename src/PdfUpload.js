@@ -1,9 +1,8 @@
-// PdfUpload.js
 import React, { useState } from 'react';
 import axios from 'axios';
 import './PdfUpload.css';  // Import the new CSS file
 
-const PdfUpload = () => {
+const PdfUpload = ({ onClose }) => {  // Added onClose prop to close the modal
   const [pdfFile, setPdfFile] = useState(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -43,7 +42,16 @@ const PdfUpload = () => {
           setProgress(percentCompleted);
         }
       });
+
       setStatusMessage(response.data.message);
+      
+      // Close the modal after successful upload
+      if (onClose) {
+        setTimeout(() => {
+          onClose(); // Trigger the close callback
+        }, 1500); // Set a delay to give time for users to see the success message
+      }
+
     } catch (error) {
       setStatusMessage('Error uploading PDF');
       setError('Failed to upload the file. Please try again.');
@@ -54,22 +62,17 @@ const PdfUpload = () => {
 
   return (
     <div className="pdf-upload-container">
-      <p className="instructions">Supported formats: PDF. Max file size: 10MB.</p>
-      <div
-        className={`drag-drop-area ${error ? 'error-border' : ''}`}
-        onDragOver={(e) => e.preventDefault()}
-      >
-        {pdfFile ? (
-          <p>{pdfFile.name}</p>
-        ) : (
-          <p>Drag and drop a PDF file here, or click to select a file.</p>
-        )}
+      <h2>Upload PDF</h2>
+      <p className="instructions">Drag and drop a PDF file here, or click to select a file</p>
+      
+      <div className="drag-drop-area">
         <input
           type="file"
           onChange={handleFileChange}
-          accept="application/pdf" // Restrict to PDF files
+          accept="application/pdf"
           className="file-input"
         />
+        <p>Drop your PDF here or click to browse</p>
       </div>
 
       {loading && (

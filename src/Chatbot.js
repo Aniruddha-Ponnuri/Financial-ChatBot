@@ -1,14 +1,16 @@
-// Chatbot.js
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Send, Loader } from 'lucide-react';
-import './Chatbot.css'; // Import the CSS file
+import { Send, Loader, Upload } from 'lucide-react';
+import PdfUpload from './PdfUpload';
+import './Chatbot.css';
+import './PdfUpload.css';
 
 const Chatbot = () => {
   const [question, setQuestion] = useState('');
   const [conversation, setConversation] = useState([]);
   const [summarizedHistory, setSummarizedHistory] = useState('');
   const [loading, setLoading] = useState(false);
+  const [pdfOverlayVisible, setPdfOverlayVisible] = useState(false); // State to toggle PDF overlay
 
   const chatContainerRef = useRef(null);
 
@@ -58,8 +60,14 @@ const Chatbot = () => {
         ))}
       </div>
 
-      {/* Footer with Input and Send Button */}
+      {/* Footer with Input, Upload Icon, and Ask Button */}
       <div className="footer">
+        {/* Upload Button - opens the PDF upload overlay */}
+        <button className="upload-icon" onClick={() => setPdfOverlayVisible(true)}>
+          <Upload className="small-icon" />
+        </button>
+        
+        {/* Input for asking question */}
         <input
           type="text"
           placeholder="Ask a question..."
@@ -68,6 +76,8 @@ const Chatbot = () => {
           className="message-input"
           disabled={loading}  // Disable input while loading
         />
+
+        {/* Ask Button */}
         <button 
           onClick={handleAskQuestion}
           disabled={loading}  // Disable button while loading
@@ -77,6 +87,17 @@ const Chatbot = () => {
           {loading ? 'Asking...' : 'Ask'}
         </button>
       </div>
+
+      {pdfOverlayVisible && (
+      <div className="overlay">  {/* Ensure this overlay class matches */}
+        <div className="pdf-upload-container">
+          <button className="close-button" onClick={() => setPdfOverlayVisible(false)}>
+            ×
+          </button>
+          <PdfUpload onClose={() => setPdfOverlayVisible(false)} />  {/* Pass onClose prop */}
+        </div>
+      </div>
+    )}
     </div>
   );
 };
