@@ -1,158 +1,135 @@
 import os
 import logging
-import tempfile
+import re
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import pdfplumber
-from openai import OpenAI
+from groq import Groq
 from dotenv import load_dotenv
 
 logging.basicConfig(level=logging.DEBUG)
 load_dotenv()
-openai_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
+
+groq_client = Groq()
 app = Flask(__name__)
-CORS(app)  
+CORS(app)
 
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  
+parsed_knowledge_base = ''  # This holds the parsed knowledge base content
 
-extracted_text = ''  
-parsed_knowledge_base = ''  
 
-def split_content(content, max_length=6000):
-    return [
-        content[i:i + max_length] for i in range(0, len(content), max_length)
-    ]
+# Helper function to format the message into HTML-friendly format
+def format_message_as_html(message):
+    formatted_message = message.replace("\n", "<br>")
+    return formatted_message
 
-def parse_with_chatgpt(dom_chunks, parse_description):
-    parsed_results = []
+# Helper function to remove HTML tags for summarization
+def remove_html_tags(text):
+    clean = re.compile('<.*?>')  # Regex to remove HTML tags
+    return re.sub(clean, '', text)
 
-    for i, chunk in enumerate(dom_chunks, start=1):
-        try:
-            input_prompt = f"Parse the following content:\n\"\"\"{chunk}\"\"\"\n\n{parse_description}"
-            completion = openai_client.chat.completions.create(
-                model="gpt-4o", 
-                messages=[{"role": "user", "content": input_prompt}],
-                max_tokens=1500, 
-                temperature=0.01, 
-                n=1,
-                stop=None
-            )
-            parsed_content = completion.choices[0].message.content.strip()
-            parsed_results.append(parsed_content)
-            
-            logging.info(f"Parsed batch: {i} of {len(dom_chunks)}")
-        
-        except Exception as e:
-            logging.error(f"Error parsing chunk {i}: {str(e)}")
-            parsed_results.append(f"Error parsing chunk {i}: {str(e)}")
-
-    return "\n".join(parsed_results)
-
-# Endpoint to upload a PDF and extract its content, split, and parse it
-@app.route('/upload', methods=['POST'])
-def upload_pdf():
-    global extracted_text, parsed_knowledge_base
-    if 'file' not in request.files:
-        logging.error("No file part in the request")
-        return jsonify({"error": "No file uploaded"}), 400
-    
-    pdf_file = request.files['file']
-    
-    if pdf_file.filename == '':
-        logging.error("No file selected")
-        return jsonify({"error": "No file selected"}), 400
-    
-    if not pdf_file.filename.lower().endswith('.pdf'):
-        logging.error("File is not a PDF")
-        return jsonify({"error": "Uploaded file is not a PDF"}), 400
-    
+def parse_with_groq(content, parse_description):
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
-            temp_path = temp_file.name
-            pdf_file.save(temp_path)
-        
-        logging.info(f"File saved temporarily at {temp_path}")
-        with pdfplumber.open(temp_path) as pdf:
-            extracted_text = ''.join(page.extract_text() for page in pdf.pages if page.extract_text())
-        os.unlink(temp_path)
-        
-        if not extracted_text:
-            logging.warning("No text extracted from the PDF")
-            return jsonify({"error": "Failed to extract text from the PDF"}), 500
-        
-        logging.info("PDF content extracted successfully")
-        
-        # Split the extracted text into chunks
-        chunks = split_content(extracted_text)
-        logging.info(f"PDF content split into {len(chunks)} chunks")
-        
-        # Parse the chunks using ChatGPT API
-        parsed_knowledge_base = parse_with_chatgpt(chunks, "Parse the PDF content to create a concise knowledge base for answering user questions.")
-        logging.info("Parsed knowledge base created")
-        
-        return jsonify({"message": "PDF content extracted and parsed successfully."}), 200
-    
-    except Exception as e:
-        logging.exception(f"Error processing PDF: {str(e)}")
-        return jsonify({"error": f"Error processing PDF: {str(e)}"}), 500
+        # Modified prompt to return the content formatted in HTML
+        input_prompt = f"""
+        Parse the following content and return it formatted as HTML (use <b> for bold, <br> for line breaks, and <ul> for bullet points):
+        \"\"\"{content}\"\"\"
+        \n\n{parse_description}
+        """
 
-# Endpoint to ask a question using the knowledge base (your version)
+        # Call the Groq API without splitting the content
+        response = groq_client.chat.completions.create(
+            messages=[{"role": "user", "content": input_prompt}],
+            model="llama-3.1-8b-instant"
+        )
+
+        # Extract and return the parsed content from the response
+        parsed_content = response.choices[0].message.content.strip()
+        logging.info("Parsing completed successfully")
+        return parsed_content
+
+    except Exception as e:
+        logging.error(f"Error parsing content: {str(e)}")
+        return f"Error parsing content: {str(e)}"
+
+# Endpoint to ask a question using the knowledge base
 @app.route('/ask', methods=['POST'])
 def ask_question():
     global parsed_knowledge_base
     question = request.json.get('question')
     history = request.json.get('history', '')
-   
-    if not parsed_knowledge_base:
-        return jsonify({"error": "No parsed knowledge base available. Please upload a PDF first."}), 400
-   
-    prompt = f"""
-    Use the knowledge base created earlier to answer the following question:
-    
-    Previous conversation summary:
-    {history}
-    
-    Question: {question}
-    """
-   
+
+    # Check if the knowledge base is empty or not
+    if parsed_knowledge_base:
+        knowledge_base_prompt = f"Here is some knowledge that can help:\n{parsed_knowledge_base}\n\n"
+    else:
+        knowledge_base_prompt = ""
+
+    # If history is empty, give a general response
+    if not history:
+        prompt = f"""
+        You are an AI assistant. Answer the following general financial question based on your knowledge And use data from India:
+        
+        Financial question: {question}
+        """
+    else:
+        # Tailored prompt for financial assistance, incorporating the knowledge base if available
+        prompt = f"""
+        You are an AI financial assistant. Use your knowledge base and the following financial data to provide informed financial decisions and analysis.
+        And use data from India
+        
+        {knowledge_base_prompt}
+        
+        Previous conversation summary:
+        {history}
+        
+        Financial question or data: {question}
+        
+        Please consider the following aspects in your response:
+        - Market trends
+        - Investment risk
+        - Growth potential
+        - Financial ratios and analysis
+        - Any other financial insights to help in decision making
+        """
+
     try:
-        # Call OpenAI to generate the answer using openai_client.chat.completions.create
-        completion = openai_client.chat.completions.create(
-            model="gpt-4o",
+        # Call Groq API to generate the answer using groq_client
+        response = groq_client.chat.completions.create(
+            model="llama-3.1-8b-instant",
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that answers questions based on the knowledge base and conversation history."},
+                {"role": "system", "content": "You are a financial assistant that provides analysis and decisions based on financial data and conversation history."},
                 {"role": "user", "content": prompt}
-            ],
-            max_tokens=4000,
-            temperature=0.01,
-            n=1,
-            stop=None
+            ]
         )
         
-        # Accessing the message content from the API response
-        answer = completion.choices[0].message.content.strip()
+        answer = response.choices[0].message.content.strip()
+
+        # Format the answer as HTML with line breaks and bullet points
+        formatted_answer = format_message_as_html(answer)
         
-        # Update conversation history and summarize
-        updated_history = f"{history}\nHuman: {question}\nAI: {answer}"
+        updated_history = f"{history}\nHuman: {question}\nAI: {formatted_answer}"
         summarized_history = summarize_conversation(updated_history)
         
-        return jsonify({"answer": answer, "summarized_history": summarized_history}), 200
+        return jsonify({"answer": formatted_answer, "summarized_history": summarized_history}), 200
     except Exception as e:
         return jsonify({"error": f"Error generating answer: {str(e)}"}), 500
 
-# Function to summarize conversation using ChatGPT API
+
+# Function to summarize conversation using Groq API
+# Removes HTML tags before summarizing
 def summarize_conversation(conversation, max_tokens=1000):
     try:
-        summary = openai_client.chat.completions.create(
-            model="gpt-4o",
+        # Remove any HTML tags from the conversation
+        cleaned_conversation = remove_html_tags(conversation)
+
+        # Generate summary without HTML tags
+        response = groq_client.chat.completions.create(
+            model="llama-3.1-8b-instant",
             messages=[
-                {"role": "system", "content": "Summarize the following conversation concisely:"},
-                {"role": "user", "content": conversation}
-            ],
-            max_tokens=max_tokens,
-            temperature=0.5
+                {"role": "system", "content": "Summarize the following financial conversation concisely:"},
+                {"role": "user", "content": cleaned_conversation}
+            ]
         )
-        return summary.choices[0].message.content.strip()
+        return response.choices[0].message.content.strip()
     except Exception as e:
         logging.error(f"Error summarizing conversation: {str(e)}")
         return "Error summarizing conversation"

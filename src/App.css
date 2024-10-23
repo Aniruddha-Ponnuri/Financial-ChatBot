@@ -3,7 +3,7 @@
 body {
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #FFFFFF; /* Update to white background */
+  background-color: #F0F1FB; /* Pale Lilac */
 }
 
 .app-container {
@@ -16,7 +16,7 @@ body {
   width: 100%;
   padding: 1rem;
   box-sizing: border-box;
-  background-color: #F5F5F7; /* Update to light grayish-blue */
+  background-color: #C8C9E8; /* Soft Cornflower Blue */
   display: flex;
   flex-direction: column;
 }
@@ -24,11 +24,11 @@ body {
 .titlebar {
   display: flex;
   align-items: center;
-  justify-content: center; /* This will horizontally center the text */
+  justify-content: center; /* Horizontally center the text */
   padding: 15px 20px;
   border-radius: 15px;
-  background-color: #fff2f0;
-  color: rgb(0, 0, 0);
+  background-color: #D6D7F0; /* Soft Periwinkle */
+  color: #171661; /* Midnight Blue */
   position: relative;
 }
 
