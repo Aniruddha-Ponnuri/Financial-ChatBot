@@ -1,22 +1,38 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Chatbot from './Chatbot';
-import './App.css'; // Import global CSS
-import logo from './logo.svg'; // Update the path accordingly
+import './App.css'; 
+import logo from './logo.png'; 
+import chat from './chatbot.png';
 
 const App = () => {
+  const [showChatbot, setShowChatbot] = useState(false);
+
+  const toggleChatbot = () => {
+    setShowChatbot(!showChatbot);
+  };
+
   return (
     <Router>
       <div className="app-container">
         {/* Title bar */}
         <div className="titlebar">
           <img src={logo} alt="Logo" className="logo" />
-          <h1 className="title"> </h1>
         </div>
 
-        {/* Chatbot with PDF upload functionality integrated */}
+        {/* Right Panel */}
         <div className="right-panel">
-          <Chatbot />
+          {/* Chatbot Overlay */}
+          {showChatbot && (
+            <div className="chatbot-overlay">
+              <Chatbot />
+            </div>
+          )}
+
+          {/* Chat Icon */}
+          <div className="chat-icon" onClick={toggleChatbot}>
+            <img src={chat} alt="Chat Icon" />
+          </div>
         </div>
       </div>
 
