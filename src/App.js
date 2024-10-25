@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Chatbot from './Chatbot';
 import './App.css'; // Import global CSS
-import logo from './logo.svg'; // Update the path accordingly
+import logo from './logo.png'; // Update the path accordingly
 
 const App = () => {
   return (
