@@ -1,0 +1,62 @@
+# Bot Configuration File
+# System prompts and RL settings for the financial chatbot
+
+# System prompts
+prompts:
+  system_prompt: "You are a financial assistant that provides analysis and decisions based on financial data and conversation history."
+  general_question_prompt: |
+    You are an AI assistant. Answer the following general financial question based on your knowledge and use data from India:
+    
+    Financial question: {question}
+  
+  financial_prompt_template: |
+    You are an AI financial assistant. Use your knowledge base and the following financial data to provide informed financial decisions and analysis.
+    And use data from India
+    
+    {knowledge_base_prompt}
+    
+    Previous conversation summary:
+    {history}
+    
+    Financial question or data: {question}
+    
+    Please consider the following aspects in your response:
+    - Market trends
+    - Investment risk
+    - Growth potential
+    - Financial ratios and analysis
+    - Any other financial insights to help in decision making
+  
+  summarization_prompt: "Summarize the following financial conversation concisely:"
+  
+  parsing_prompt_template: |
+    Parse the following content and return it formatted as HTML (use <b> for bold, <br> for line breaks, and <ul> for bullet points):
+    """{content}"""
+    
+    {parse_description}
+
+# Reinforcement Learning Configuration
+rl_config:
+  enabled: true
+  n_candidates: 4  # Number of candidate responses to generate
+  temperature_min: 0.7  # Minimum temperature for generation diversity
+  temperature_max: 1.2  # Maximum temperature for generation diversity
+  reward_model:
+    embedding_model: "all-MiniLM-L6-v2"  # Sentence transformer model
+    update_batch_size: 10  # Minimum samples before retraining
+    min_samples_for_training: 20  # Minimum feedback samples needed
+  
+# Model Configuration
+model:
+  name: "llama-3.1-8b-instant"
+  default_temperature: 0.9
+  max_tokens: 2000
+
+# Database Configuration
+database:
+  path: "feedback.db"
+  
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "[%(asctime)s] [%(levelname)s] [%(filename)s:%(lineno)d] %(message)s"

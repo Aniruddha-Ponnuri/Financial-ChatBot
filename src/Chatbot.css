@@ -8,6 +8,81 @@
   background-color: #A5A6CC; /* Light Slate Blue */
 }
 
+/* Header Styles */
+.chat-header {
+  background: linear-gradient(135deg, #3E3B99 0%, #5B598E 100%);
+  padding: 1rem 1.5rem;
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-header h2 {
+  color: #FFFFFF;
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* RL Toggle Styles */
+.rl-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-input {
+  display: none;
+}
+
+.toggle-slider {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  transition: background-color 0.3s;
+  margin-right: 8px;
+}
+
+.toggle-slider::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  top: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+
+.toggle-input:checked + .toggle-slider {
+  background-color: #10B981;
+}
+
+.toggle-input:checked + .toggle-slider::after {
+  transform: translateX(26px);
+}
+
+.toggle-text {
+  color: #FFFFFF;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
 .chat-messages {
   display: flex;
   flex-direction: column;
@@ -74,6 +149,21 @@
   cursor: not-allowed;
 }
 
+/* Message Wrapper Styles */
+.message-wrapper {
+  display: flex;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.user-message {
+  justify-content: flex-end;
+}
+
+.bot-message {
+  justify-content: flex-start;
+}
+
 .user-bubble, .bot-bubble {
   max-width: 75%;
   padding: 10px 15px;
@@ -83,6 +173,7 @@
   display: inline-block;
   position: relative;
 }
+
 .user-bubble {
   background-color: #3E3B99; /* Dark Periwinkle */
   color: #FFFFFF;
@@ -97,6 +188,62 @@
   align-self: flex-start;
   margin-right: auto;
   text-align: left;
+}
+
+/* Feedback Buttons Styles */
+.feedback-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.feedback-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #FFFFFF;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.feedback-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.feedback-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.feedback-btn.active-positive {
+  background: #10B981;
+  border-color: #059669;
+  color: #FFFFFF;
+}
+
+.feedback-btn.active-negative {
+  background: #EF4444;
+  border-color: #DC2626;
+  color: #FFFFFF;
+}
+
+/* RL Badge */
+.rl-badge {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 12px;
+  color: #FFFFFF;
+  margin-left: auto;
 }
 
 .user-bubble::after, .bot-bubble::after {
