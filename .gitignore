@@ -18,11 +18,15 @@
 .env.test.local
 .env.production.local
 
+*.pyc
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 *.db
 .env
 documentation
-Backend\__pycache__\
-Backend\model_data\
+*\__pycache__\*
+*\model_data\*
+*.sqlite3
+Backend\utils\__pycache__
+Backend\__pycache__

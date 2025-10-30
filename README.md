@@ -6,14 +6,25 @@ An intelligent financial advisory chatbot powered by AI with **Reinforcement Lea
 
 ### Core Capabilities
 - 💬 **Conversational AI** - Natural language financial advice using Groq LLM (Llama 3.1)
+- 📈 **Real-Time Stock Data** - Live market data integration with yfinance (NEW!)
+- 🎯 **Smart Symbol Detection** - AI extracts stock symbols from natural questions
 - 🤖 **Reinforcement Learning** - Learns from user feedback to improve responses over time
 - 📊 **Multi-Candidate Generation** - Generates multiple responses and selects the best one
 - 👍👎 **User Feedback System** - Rate responses to train the AI
-- 📈 **Continuous Learning** - Model updates incrementally with each feedback
+- � **Continuous Learning** - Model updates incrementally with each feedback
 - 🎚️ **RL Toggle** - Switch between RL and Standard mode on-the-fly
 - 💾 **Persistent Storage** - SQLite database for feedback tracking
 - 📝 **Conversation History** - Maintains context across messages
 - 🇮🇳 **India-Focused** - Financial advice tailored for Indian markets
+
+### Stock Data Features (NEW!)
+- 📊 **Live Market Data** - Current prices, volume, market cap, P/E ratios
+- 📉 **Historical Analysis** - 1-month price trends and performance metrics
+- 🔍 **Intelligent Extraction** - Understands company names and ticker symbols
+- 🏢 **Company Info** - Sector, industry, business descriptions
+- 💰 **Financial Metrics** - EPS, dividends, 52-week ranges
+- 🔄 **Auto-Detection** - Automatically identifies stock-related queries
+- 📈 **Multi-Stock Support** - Compare multiple stocks in one query
 
 ### Technical Highlights
 - ⚡ Fast response generation with Groq API
@@ -23,6 +34,7 @@ An intelligent financial advisory chatbot powered by AI with **Reinforcement Lea
 - 📊 Real-time analytics and statistics
 - 🔧 Centralized YAML configuration
 - 📋 Comprehensive logging system
+- 🌐 Yahoo Finance integration for market data
 
 ## 🏗️ Architecture
 
@@ -70,8 +82,10 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 3. **Install Python dependencies**
 ```bash
-pip install flask flask-cors groq python-dotenv sentence-transformers scikit-learn PyYAML
+pip install flask flask-cors groq python-dotenv sentence-transformers scikit-learn PyYAML yfinance
 ```
+
+**Note**: The `yfinance` package provides real-time stock market data from Yahoo Finance.
 
 4. **Set up environment variables**
 
@@ -153,6 +167,36 @@ The page will reload when you make changes.
    - Responses generated using RL show a "🤖 RL" badge
    - Indicates the response was selected from multiple candidates
 
+### Stock Query Examples (NEW!)
+
+The chatbot now automatically detects and fetches real-time stock data. Try these:
+
+**Single Stock:**
+```
+"What's the current price of Apple stock?"
+"How is TSLA performing today?"
+"Tell me about Microsoft stock"
+```
+
+**Multiple Stocks:**
+```
+"Compare Amazon and Google stocks"
+"Should I invest in NVDA or AMD?"
+```
+
+**Analysis Requests:**
+```
+"Analyze Tesla's stock performance"
+"Is Apple stock overvalued based on P/E ratio?"
+"What's the 52-week range for META?"
+```
+
+The system will:
+1. 🎯 Extract stock symbols (AAPL, TSLA, MSFT, etc.)
+2. 📊 Fetch live market data (price, volume, metrics)
+3. 📈 Get historical trends (1-month performance)
+4. 💡 Provide data-driven analysis
+
 ### Example Workflow
 
 ```
@@ -167,6 +211,21 @@ The page will reload when you make changes.
 5. User clicks 👍 (positive feedback)
    ↓
 6. System learns and improves future responses
+```
+
+### Stock Query Workflow (NEW!)
+
+```
+1. User: "What's Apple's stock price?"
+   ↓
+2. LLM extracts: symbol="AAPL", is_stock_query=true
+   ↓
+3. yfinance fetches real-time AAPL data
+   ↓
+4. Stock context injected into prompt
+   ↓
+5. Bot: "Apple (AAPL) is currently trading at $178.50...
+         with P/E ratio of 28.5, up 7.54% this month" [👍] [👎]
 ```
 
 ## 🧪 Testing

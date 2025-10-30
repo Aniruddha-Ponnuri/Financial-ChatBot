@@ -11,6 +11,8 @@ from utils.logger import CustomLogger
 from utils.database import FeedbackDatabase
 from utils.reward_model import RewardModel
 from utils.helpers import format_message_as_html, remove_html_tags
+from utils.stock_data import StockDataFetcher
+import json
 
 # Initialize logger
 logger = CustomLogger()
@@ -30,6 +32,10 @@ CORS(app)
 # Initialize database
 db_path = os.path.join(os.path.dirname(__file__), config.get('database.path', 'feedback.db'))
 feedback_db = FeedbackDatabase(db_path, logger)
+
+# Initialize stock data fetcher
+stock_fetcher = StockDataFetcher(logger)
+logger.info("Stock data fetcher initialized")
 
 # Initialize reward model if RL is enabled
 reward_model = None
@@ -68,8 +74,58 @@ def parse_with_groq(content, parse_description):
         logger.error(f"Error parsing content: {str(e)}")
         return f"Error parsing content: {str(e)}"
 
+
+def extract_stock_symbols(question):
+    """
+    Use LLM to extract stock symbols from user question.
+    Returns tuple: (list of symbols, is_stock_query boolean)
+    """
+    try:
+        prompt = config.get_prompt('stock_symbol_extraction_prompt')
+        if not prompt:
+            logger.warning("Stock symbol extraction prompt not found in config")
+            return [], False
+        
+        formatted_prompt = prompt.format(question=question)
+        
+        response = groq_client.chat.completions.create(
+            messages=[{"role": "user", "content": formatted_prompt}],
+            model=config.get_model_config('name', 'llama-3.1-8b-instant'),
+            temperature=0.3,  # Low temperature for consistent extraction
+            max_tokens=200
+        )
+        
+        result_text = response.choices[0].message.content.strip()
+        logger.info(f"Symbol extraction response: {result_text}")
+        
+        # Parse JSON response
+        import json
+        # Try to find JSON in the response
+        if '{' in result_text and '}' in result_text:
+            json_start = result_text.find('{')
+            json_end = result_text.rfind('}') + 1
+            json_str = result_text[json_start:json_end]
+            result = json.loads(json_str)
+            
+            symbols = result.get('symbols', [])
+            is_stock_query = result.get('is_stock_query', False)
+            
+            logger.info(f"Extracted symbols: {symbols}, is_stock_query: {is_stock_query}")
+            return symbols, is_stock_query
+        else:
+            logger.warning("No JSON found in LLM response")
+            return [], False
+            
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decode error in symbol extraction: {e}")
+        return [], False
+    except Exception as e:
+        logger.error(f"Error extracting stock symbols: {e}")
+        return [], False
+
+
 # Helper function to generate multiple candidate responses
-def generate_candidates(question, history, knowledge_base_prompt, n_candidates):
+def generate_candidates(question, history, knowledge_base_prompt, n_candidates, stock_context=""):
     """Generate multiple candidate responses with varying parameters"""
     candidates = []
     system_prompt = config.get_prompt('system_prompt')
@@ -79,8 +135,25 @@ def generate_candidates(question, history, knowledge_base_prompt, n_candidates):
     temp_min = config.get_rl_config('temperature_min', 0.7)
     temp_max = config.get_rl_config('temperature_max', 1.2)
     
-    # Build the appropriate prompt
-    if not history:
+    # Build the appropriate prompt with stock context if available
+    if stock_context:
+        prompt_template = config.get_prompt('stock_financial_prompt_template')
+        if not prompt_template:
+            # Fallback to regular financial prompt with stock context
+            prompt_template = config.get_prompt('financial_prompt_template')
+            prompt = prompt_template.format(
+                knowledge_base_prompt=f"{knowledge_base_prompt}\n\nREAL-TIME STOCK DATA:\n{stock_context}",
+                history=history,
+                question=question
+            )
+        else:
+            prompt = prompt_template.format(
+                stock_context=stock_context,
+                knowledge_base_prompt=knowledge_base_prompt,
+                history=history,
+                question=question
+            )
+    elif not history:
         prompt_template = config.get_prompt('general_question_prompt')
         prompt = prompt_template.format(question=question)
     else:
@@ -169,12 +242,38 @@ def ask_question():
         knowledge_base_prompt = ""
 
     try:
+        # Extract stock symbols from the question
+        symbols, is_stock_query = extract_stock_symbols(question)
+        stock_context = ""
+        
+        # Fetch real-time stock data if this is a stock query
+        if is_stock_query and symbols:
+            logger.info(f"Stock query detected for symbols: {symbols}")
+            stock_data_parts = []
+            
+            for symbol in symbols:
+                stock_info_str = stock_fetcher.format_stock_context(symbol, include_historical=True)
+                if stock_info_str and "Unable to fetch" not in stock_info_str:
+                    stock_data_parts.append(stock_info_str)
+                else:
+                    logger.warning(f"Could not fetch data for symbol: {symbol}")
+            
+            if stock_data_parts:
+                stock_context = "\n\n".join(stock_data_parts)
+                logger.info(f"Successfully fetched stock data for {len(stock_data_parts)} symbols")
+        
         # Use RL-based generation if enabled and reward model is available
         if use_rl and reward_model is not None:
             n_candidates = config.get_rl_config('n_candidates', 4)
             
-            # Generate multiple candidates
-            candidates = generate_candidates(question, history, knowledge_base_prompt, n_candidates)
+            # Generate multiple candidates with stock context if available
+            candidates = generate_candidates(
+                question, 
+                history, 
+                knowledge_base_prompt, 
+                n_candidates,
+                stock_context=stock_context
+            )
             
             if not candidates:
                 return jsonify({"error": "Failed to generate any responses"}), 500
@@ -188,8 +287,25 @@ def ask_question():
             system_prompt = config.get_prompt('system_prompt')
             model_name = config.get_model_config('name', 'llama-3.1-8b-instant')
             
-            # Build prompt
-            if not history:
+            # Build prompt - use stock-specific prompt if we have stock data
+            if stock_context:
+                prompt_template = config.get_prompt('stock_financial_prompt_template')
+                if not prompt_template:
+                    # Fallback to regular financial prompt
+                    prompt_template = config.get_prompt('financial_prompt_template')
+                    prompt = prompt_template.format(
+                        knowledge_base_prompt=f"{knowledge_base_prompt}\n\nREAL-TIME STOCK DATA:\n{stock_context}",
+                        history=history,
+                        question=question
+                    )
+                else:
+                    prompt = prompt_template.format(
+                        stock_context=stock_context,
+                        knowledge_base_prompt=knowledge_base_prompt,
+                        history=history,
+                        question=question
+                    )
+            elif not history:
                 prompt_template = config.get_prompt('general_question_prompt')
                 prompt = prompt_template.format(question=question)
             else:
@@ -220,7 +336,8 @@ def ask_question():
         return jsonify({
             "answer": formatted_answer, 
             "summarized_history": summarized_history,
-            "rl_used": use_rl and reward_model is not None
+            "rl_used": use_rl and reward_model is not None,
+            "stock_symbols": symbols if is_stock_query else []
         }), 200
         
     except Exception as e:
