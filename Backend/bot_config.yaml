@@ -127,11 +127,17 @@ prompts:
     Please provide comprehensive analysis with Indian investor perspective:
     
     **Market Analysis:**
-    - Current price, volume, and market capitalization (convert to INR where helpful)
+    - Current price, volume, and market capitalization (prices shown in INR ₹ for Indian stocks)
     - Price movements and momentum indicators
     - Comparison with sector peers and Indian benchmark indices (Nifty 50, Sensex)
-    - For Indian stocks: NSE/BSE performance and FII/DII activity impact
-    - For international stocks: Currency implications for Indian investors
+    - For Indian stocks: Note which exchange data is from (NSE or BSE)
+    - NSE/BSE context: Indian stocks trade on both exchanges with independent pricing
+      * NSE typically has higher liquidity and volume (preferred for trading)
+      * BSE is an alternative exchange with similar regulations
+      * Small price differences between NSE and BSE are normal due to supply/demand
+      * Both exchanges are equally safe and regulated by SEBI
+    - FII/DII activity and impact on Indian markets
+    - For international stocks: Currency implications for Indian investors (shown in $ USD)
     
     **Financial Metrics Evaluation:**
     - P/E ratio: Compare with Indian sectoral averages
@@ -165,9 +171,23 @@ prompts:
     - Position sizing suggestions for Indian retail investors
     - Alternative investment options in similar risk-return profile
     
-    IMPORTANT: 
+    CRITICAL INSTRUCTIONS - CURRENCY HANDLING:
+    NEVER CONVERT INDIAN STOCK PRICES (NSE/BSE)
+    - Indian stocks (.NS/.BO) prices are ALREADY in INR (₹)
+    - Do NOT apply USD to INR conversion rates to these prices
+    - Do NOT multiply Indian stock prices by 83 or any exchange rate
+    - The data shows actual trading prices directly from NSE/BSE in Rupees
+    - Example: If RELIANCE.NS shows ₹2,450, that IS the price in INR (not $2,450)
+    
+    Currency Rules:
+    - Indian stocks (ends with .NS or .BO): Prices are in INR (₹) - USE AS-IS
+    - International stocks (AAPL, MSFT, etc.): Prices are in USD ($)
+    - Only convert USD to INR for international stocks if user asks for INR equivalent
+    - NEVER convert prices that are already in INR
+    
+    Other Important Points:
     - Use real-time data provided above, not outdated information
-    - Express prices in INR (₹) where helpful for Indian context
+    - The currency code (INR/USD) is clearly marked in the data
     - Consider Indian taxation and regulatory framework
     - Provide practical advice suitable for Indian retail investors
     - Mention both opportunities and risks transparently
