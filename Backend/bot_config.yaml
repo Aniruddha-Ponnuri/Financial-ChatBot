@@ -67,7 +67,26 @@ prompts:
     
     Use INR (₹) for all monetary amounts. Focus on actionable advice for Indian investors.
   
-  summarization_prompt: "Summarize the following financial conversation concisely:"
+  summarization_prompt: |
+    You are summarizing a financial conversation between a user and an AI financial advisor.
+    Create a concise summary that captures:
+    - Key topics discussed
+    - Important financial questions asked
+    - Main advice or insights provided
+    
+    Keep the summary brief (2-3 sentences) and focused on the essential information.
+    This summary will be used as context for future questions in the conversation.
+    
+    DO NOT create a document. DO NOT include formatting. Return ONLY the plain text summary.
+  
+  # Session title generation prompt
+  session_title_prompt: |
+    Generate a very short, concise title (maximum 50 characters) for a chat session based on this first question. 
+    Return ONLY the title, nothing else. Do NOT include quotes.
+    
+    Question: {question}
+    
+    Title:
   
   parsing_prompt_template: |
     Parse the following content and return it formatted as HTML (use <b> for bold, <br> for line breaks, and <ul> for bullet points):

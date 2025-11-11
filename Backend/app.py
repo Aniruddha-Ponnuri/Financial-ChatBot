@@ -76,21 +76,28 @@ def parse_with_groq(content, parse_description):
         logger.info(f"Parse description: {parse_description}")
         logger.info(f"Content length: {len(content)} characters")
         
-        # Modified prompt to return the content formatted in HTML
-        input_prompt = f"""
-        Parse the following content and return it formatted as HTML (use <b> for bold, <br> for line breaks, and <ul> for bullet points):
-        \"\"\"{content}\"\"\"
-        \n\n{parse_description}
-        """
+        # Use prompt template from config
+        prompt_template = config.get_prompt('parsing_prompt_template')
+        if not prompt_template:
+            # Fallback if not in config
+            logger.warning("parsing_prompt_template not found in config, using fallback")
+            input_prompt = f"""
+            Parse the following content and return it formatted as HTML (use <b> for bold, <br> for line breaks, and <ul> for bullet points):
+            \"\"\"{content}\"\"\"
+            \n\n{parse_description}
+            """
+        else:
+            input_prompt = prompt_template.format(
+                content=content,
+                parse_description=parse_description
+            )
 
         logger.info("Calling Groq API for content parsing")
-        # Call the Groq API without splitting the content
         response = groq_client.chat.completions.create(
             messages=[{"role": "user", "content": input_prompt}],
-            model="llama-3.1-8b-instant"
+            model=config.get_model_config('name', 'llama-3.1-8b-instant')
         )
 
-        # Extract and return the parsed content from the response
         parsed_content = response.choices[0].message.content.strip()
         logger.info(f"Parsing completed successfully, output length: {len(parsed_content)} characters")
         return parsed_content
@@ -99,6 +106,51 @@ def parse_with_groq(content, parse_description):
         logger.error(f"Error parsing content: {str(e)}")
         logger.error(f"Parse description was: {parse_description}")
         return f"Error parsing content: {str(e)}"
+
+
+def generate_session_title(question: str) -> str:
+    """
+    Generate a concise session title from the first question using LLM.
+    Max 50 characters.
+    """
+    try:
+        logger.info("Generating session title from first question")
+        
+        # Use prompt from config
+        prompt_template = config.get_prompt('session_title_prompt')
+        if not prompt_template:
+            # Fallback prompt if not in config
+            logger.warning("session_title_prompt not found in config, using fallback")
+            prompt_template = """Generate a very short, concise title (maximum 50 characters) for a chat session based on this first question. 
+Return ONLY the title, nothing else.
+
+Question: {question}
+
+Title:"""
+        
+        prompt = prompt_template.format(question=question)
+        
+        response = groq_client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model=config.get_model_config('name', 'llama-3.1-8b-instant'),
+            temperature=0.5,
+            max_tokens=30
+        )
+        
+        title = response.choices[0].message.content.strip()
+        # Remove quotes if present
+        title = title.strip('"\'')
+        # Truncate to 50 chars
+        title = title[:50]
+        
+        logger.info(f"Generated title: '{title}'")
+        return title
+        
+    except Exception as e:
+        logger.error(f"Error generating session title: {e}")
+        # Fallback: use first few words of question
+        words = question.split()[:5]
+        return ' '.join(words)[:50]
 
 
 def extract_stock_symbols(question):
@@ -288,10 +340,12 @@ def ask_question():
     question = request.json.get('question')
     history = request.json.get('history', '')
     use_rl = request.json.get('use_rl', config.is_rl_enabled())  # Allow override
+    session_id = request.json.get('session_id')  # Get session ID if provided
     
     logger.info(f"Question received: '{question[:100]}...' (length: {len(question) if question else 0})")
     logger.info(f"History length: {len(history)} chars")
     logger.info(f"RL mode: {'enabled' if use_rl else 'disabled'}")
+    logger.info(f"Session ID: {session_id if session_id else 'None'}")
     
     if not question:
         logger.error("Question parameter missing from request")
@@ -417,15 +471,41 @@ def ask_question():
         updated_history = f"{history}\nHuman: {question}\nAI: {formatted_answer}"
         summarized_history = summarize_conversation(updated_history)
         
+        # Handle session management
+        is_new_session = False
+        if session_id:
+            # Check if this is a new session (first message)
+            session = feedback_db.get_session(session_id)
+            if not session:
+                # Create new session with generated title
+                logger.info("Creating new session")
+                title = generate_session_title(question)
+                feedback_db.create_session(session_id, title)
+                is_new_session = True
+            
+            # Save user message
+            feedback_db.save_message(session_id, 'user', question, rl_used=False)
+            # Save assistant message
+            feedback_db.save_message(session_id, 'assistant', formatted_answer, 
+                                   rl_used=(use_rl and reward_model is not None))
+            logger.info(f"Messages saved to session {session_id}")
+        
         logger.info("Successfully processed /ask request")
         logger.info("=" * 60)
         
-        return jsonify({
+        response_data = {
             "answer": formatted_answer, 
             "summarized_history": summarized_history,
             "rl_used": use_rl and reward_model is not None,
             "stock_symbols": symbols if is_stock_query else []
-        }), 200
+        }
+        
+        if is_new_session and session_id:
+            # Return session info for new sessions
+            session = feedback_db.get_session(session_id)
+            response_data["session"] = session
+        
+        return jsonify(response_data), 200
         
     except Exception as e:
         logger.error(f"Critical error in /ask endpoint: {str(e)}")
@@ -666,6 +746,76 @@ def generate_candidates_endpoint():
         logger.error(f"Error generating candidates: {e}")
         logger.error(f"Error type: {type(e).__name__}")
         logger.error("=" * 60)
+        return jsonify({"error": str(e)}), 500
+
+
+# Chat Session Management Endpoints
+
+@app.route('/sessions', methods=['GET'])
+def get_sessions():
+    """Get all chat sessions."""
+    try:
+        logger.info("Received GET request to /sessions endpoint")
+        sessions = feedback_db.get_all_sessions()
+        logger.info(f"Returning {len(sessions)} sessions")
+        
+        return jsonify({"sessions": sessions}), 200
+        
+    except Exception as e:
+        logger.error(f"Error retrieving sessions: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/sessions/<session_id>', methods=['GET'])
+def get_session(session_id):
+    """Get a specific session with all its messages."""
+    try:
+        logger.info(f"Received GET request to /sessions/{session_id} endpoint")
+        
+        session = feedback_db.get_session(session_id)
+        if not session:
+            return jsonify({"error": "Session not found"}), 404
+        
+        messages = feedback_db.get_session_messages(session_id)
+        
+        # Format messages for frontend
+        formatted_messages = []
+        for msg in messages:
+            formatted_messages.append({
+                "role": msg["role"],
+                "content": msg["content"],
+                "timestamp": msg["timestamp"],
+                "rlUsed": bool(msg["rl_used"])
+            })
+        
+        logger.info(f"Returning session with {len(formatted_messages)} messages")
+        
+        return jsonify({
+            "session": session,
+            "messages": formatted_messages
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error retrieving session {session_id}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/sessions/<session_id>', methods=['DELETE'])
+def delete_session(session_id):
+    """Delete a chat session."""
+    try:
+        logger.info(f"Received DELETE request to /sessions/{session_id} endpoint")
+        
+        success = feedback_db.delete_session(session_id)
+        
+        if success:
+            logger.info(f"Session {session_id} deleted successfully")
+            return jsonify({"status": "success", "message": "Session deleted"}), 200
+        else:
+            return jsonify({"error": "Failed to delete session"}), 500
+        
+    except Exception as e:
+        logger.error(f"Error deleting session {session_id}: {e}")
         return jsonify({"error": str(e)}), 500
 
 
