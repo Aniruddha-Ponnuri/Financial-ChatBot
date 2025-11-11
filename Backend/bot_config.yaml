@@ -230,8 +230,8 @@ model:
 
 # Database Configuration
 database:
-  path: "Backend/model_data/feedback.db"
-  
+  folder: "data"
+  path: "feedback.db"
 # Logging Configuration
 logging:
   level: "INFO"

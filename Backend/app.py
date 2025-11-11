@@ -45,8 +45,9 @@ logger.info("Flask app initialized with CORS enabled")
 
 # Initialize database
 db_path = os.path.join(os.path.dirname(__file__), config.get("database.path", "feedback.db"))
+db_folder = os.path.join(os.path.dirname(__file__), config.get("database.folder", "data"))
 logger.info(f"Initializing feedback database at: {db_path}")
-feedback_db = FeedbackDatabase(db_path, logger)
+feedback_db = FeedbackDatabase(db_folder, db_path, logger)
 logger.info("Feedback database initialized")
 
 # Initialize stock data fetcher
