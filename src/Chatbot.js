@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Send, Loader, ThumbsUp, ThumbsDown } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import './Chatbot.css';
 
 const Chatbot = () => {
@@ -137,7 +138,11 @@ const Chatbot = () => {
               className={msg.role === 'user' ? 'user-bubble' : 'bot-bubble'}
               data-sender={msg.role === 'user' ? 'You' : 'Bot'}
             >
-              <div dangerouslySetInnerHTML={{ __html: msg.content }} />
+              {msg.role === 'assistant' ? (
+                <ReactMarkdown>{msg.content}</ReactMarkdown>
+              ) : (
+                <div dangerouslySetInnerHTML={{ __html: msg.content }} />
+              )}
               
               {/* Feedback Buttons for Bot Messages */}
               {msg.role === 'assistant' && (
