@@ -1,0 +1,29 @@
+# Core Dependencies
+flask==3.0.0
+flask-cors==4.0.0
+python-dotenv==1.0.0
+pyyaml==6.0.1
+
+# LangChain Core
+langchain==0.1.0
+langchain-core==0.1.10
+
+# LangChain Provider Integrations
+langchain-openai==0.0.2        # OpenAI + Azure OpenAI support
+langchain-groq==0.0.1          # Groq support
+langchain-anthropic==0.0.1     # Anthropic (Claude) support
+langchain-cohere==0.0.1        # Cohere support
+
+# Machine Learning / RL
+torch>=2.0.0
+transformers>=4.30.0
+sentence-transformers>=2.2.0
+
+# Stock Data
+yfinance>=0.2.0
+
+# Database
+sqlite3-python
+
+# Utilities
+numpy>=1.24.0

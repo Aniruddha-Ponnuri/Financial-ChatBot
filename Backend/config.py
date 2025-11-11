@@ -120,7 +120,23 @@ class DefaultConfig:
             try:
                 cls.logger.info("Reading environment configuration")
                 cls.ENV = config_reader.read_config_value("ENVIRONMENT")
-                cls.GROQ_API_KEY = config_reader.read_config_value("GROQ_API_KEY")
+                cls.LLM_PROVIDER = config_reader.read_config_value("LLM_PROVIDER")
+                
+                # Read API key based on provider
+                provider = cls.LLM_PROVIDER.lower()
+                if provider == "groq":
+                    cls.API_KEY = config_reader.read_config_value("GROQ_API_KEY")
+                elif provider == "openai":
+                    cls.API_KEY = config_reader.read_config_value("OPENAI_API_KEY")
+                elif provider == "azure":
+                    cls.API_KEY = config_reader.read_config_value("AZURE_OPENAI_API_KEY")
+                elif provider == "anthropic":
+                    cls.API_KEY = config_reader.read_config_value("ANTHROPIC_API_KEY")
+                elif provider == "cohere":
+                    cls.API_KEY = config_reader.read_config_value("COHERE_API_KEY")
+                else:
+                    cls.logger.warning(f"Unknown provider: {provider}")
+                    cls.API_KEY = None
                 
                 # Load bot configuration
                 config_path = os.path.join(os.path.dirname(__file__), 'bot_config.yaml')
@@ -129,6 +145,7 @@ class DefaultConfig:
                 
                 cls.logger.info("Config values loaded successfully")
                 cls.logger.info(f"Environment: {cls.ENV}")
+                cls.logger.info(f"LLM Provider: {cls.LLM_PROVIDER}")
                 cls.logger.info(f"RL Mode: {'Enabled' if cls.bot_config.is_rl_enabled() else 'Disabled'}")
                 cls._initialised = True
                 cls.logger.info("DefaultConfig initialization complete")
