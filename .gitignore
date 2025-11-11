@@ -4,7 +4,8 @@
 /node_modules
 /.pnp
 .pnp.js
-/__pycache__/
+__pycache__/
+
 # testing
 /coverage
 
@@ -18,15 +19,26 @@
 .env.test.local
 .env.production.local
 
-*.pyc
+# logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# python
+*.pyc
 *.db
-.env
-documentation
-*\__pycache__\*
-*\model_data\*
 *.sqlite3
-Backend\utils\__pycache__
-Backend\__pycache__
+
+# environment
+.env
+
+# documentation
+documentation/
+
+# directories (anywhere in tree)
+**/node_modules/
+**/model_data/
+**/__pycache__/
+
+# files
+*.bat
