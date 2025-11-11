@@ -1,29 +1,28 @@
-# Core Dependencies
-flask==3.0.0
-flask-cors==4.0.0
-python-dotenv==1.0.0
-pyyaml==6.0.1
+# Web / env
+Flask==3.1.2
+Flask-Cors==6.0.1
+python-dotenv==1.2.1
+PyYAML==6.0.3
 
-# LangChain Core
-langchain==0.1.0
-langchain-core==0.1.10
+# LangChain ecosystem (aligned majors)
+langchain==1.0.5
+langchain-core==1.0.4
+langchain-openai==1.0.2
+langchain-anthropic==1.0.2
+langchain-groq==1.0.0
+langchain-text-splitters==1.0.0
 
-# LangChain Provider Integrations
-langchain-openai==0.0.2        # OpenAI + Azure OpenAI support
-langchain-groq==0.0.1          # Groq support
-langchain-anthropic==0.0.1     # Anthropic (Claude) support
-langchain-cohere==0.0.1        # Cohere support
 
-# Machine Learning / RL
-torch>=2.0.0
-transformers>=4.30.0
-sentence-transformers>=2.2.0
+# Machine learning / embeddings
+torch==2.9.0
+transformers==4.57.1
+sentence-transformers==5.1.2
+scikit-learn==1.7.2
 
-# Stock Data
-yfinance>=0.2.0
-
-# Database
-sqlite3-python
+# Data / finance
+yfinance==0.2.66
 
 # Utilities
-numpy>=1.24.0
+numpy==1.26.4
+requests==2.32.5
+urllib3==2.5.0

@@ -2,9 +2,10 @@ import datetime
 import os
 import sys
 
-class CustomLogger: 
+
+class CustomLogger:
     def _log(self, level, message):
-        timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         filename = os.path.basename(sys._getframe(2).f_code.co_filename)
         line_number = sys._getframe(2).f_lineno
         print(f"[{timestamp}] [{level}] [{filename}:{line_number}] {message}")
