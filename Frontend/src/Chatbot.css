@@ -1,11 +1,21 @@
 /* Chatbot Styles */
 
+:root {
+  --header-height: clamp(50px, 8vh, 75px);
+  --footer-padding: clamp(10px, 2vh, 20px);
+  --font-size-base: clamp(14px, 1.5vw, 16px);
+  --font-size-header: clamp(18px, 2vw, 24px);
+  --font-size-toggle: clamp(12px, 1.2vw, 14px);
+  --padding-base: clamp(12px, 1.5vw, 24px);
+}
+
 .chat-app {
   display: flex;
   height: 100vh;
   width: 100vw;
   background-color: #343541;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .chat-main {
@@ -23,9 +33,12 @@
 }
 
 .chat-header {
+  flex: 0 0 var(--header-height);
   background: linear-gradient(135deg, #3E3B99 0%, #5B598E 100%);
-  padding: 1rem 1.5rem;
+  padding: 0 var(--padding-base);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
 }
 
 .header-content {
@@ -40,11 +53,16 @@
   background: none;
   border: none;
   color: #FFFFFF;
-  font-size: 24px;
+  font-size: clamp(24px, 2.5vw, 32px);
   cursor: pointer;
   padding: 8px;
   transition: background-color 0.2s;
   border-radius: 4px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar-toggle:hover {
@@ -54,9 +72,12 @@
 .chat-header h2 {
   color: #FFFFFF;
   margin: 0;
-  font-size: 1.5rem;
+  font-size: var(--font-size-header);
   font-weight: 600;
   flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rl-toggle {
@@ -68,6 +89,9 @@
   display: flex;
   align-items: center;
   cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
 }
 
@@ -76,10 +100,10 @@
 }
 
 .toggle-slider {
-  width: 48px;
-  height: 24px;
+  width: 40px;
+  height: 20px;
   background-color: #4d4d4f;
-  border-radius: 12px;
+  border-radius: 10px;
   position: relative;
   transition: background-color 0.3s;
   margin-right: 8px;
@@ -92,8 +116,8 @@
 .toggle-slider::before {
   content: '';
   position: absolute;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   background-color: white;
   border-radius: 50%;
   top: 2px;
@@ -102,22 +126,24 @@
 }
 
 .toggle-input:checked + .toggle-slider::before {
-  transform: translateX(24px);
+  transform: translateX(20px);
 }
 
 .toggle-text {
   color: #FFFFFF;
-  font-size: 14px;
+  font-size: var(--font-size-toggle);
   font-weight: 500;
 }
 
 .chat-messages {
-  flex: 1;
+  flex: 1 1 auto;
   overflow-y: auto;
-  padding: 24px;
+  padding: var(--padding-base);
   display: flex;
   flex-direction: column;
   gap: 16px;
+  /* This is the crucial part for containing the scroll */
+  height: calc(100vh - var(--header-height) - (var(--footer-padding) * 2) - 56px); /* 56px is approx footer height */
 }
 
 .empty-state {
@@ -132,12 +158,12 @@
 
 .empty-state h3 {
   color: #ececf1;
-  font-size: 24px;
+  font-size: clamp(20px, 2.4vw, 28px);
   margin-bottom: 12px;
 }
 
 .empty-state p {
-  font-size: 16px;
+  font-size: clamp(14px, 1.6vw, 18px);
 }
 
 .message-wrapper {
@@ -155,11 +181,12 @@
 
 .user-bubble,
 .bot-bubble {
-  max-width: 70%;
-  padding: 16px 20px;
+  max-width: 80%;
+  padding: 12px 16px;
   border-radius: 16px;
   word-wrap: break-word;
   line-height: 1.6;
+  font-size: var(--font-size-base);
 }
 
 .user-bubble {
@@ -231,6 +258,7 @@
   align-items: center;
   transition: all 0.2s;
   color: #acacbe;
+  min-height: 44px; /* Touch target size */
 }
 
 .feedback-btn:hover:not(:disabled) {
@@ -261,13 +289,14 @@
   background-color: #10a37f;
   color: white;
   border-radius: 12px;
-  font-size: 11px;
+  font-size: clamp(10px, 1.1vw, 12px);
   font-weight: 600;
   margin-left: 8px;
 }
 
 .footer {
-  padding: 20px;
+  flex: 0 0 auto;
+  padding: var(--footer-padding) var(--padding-base);
   background-color: #343541;
   border-top: 1px solid #4d4d4f;
   display: flex;
@@ -277,17 +306,17 @@
 
 .message-input {
   flex: 1;
-  padding: 14px 16px;
+  padding: 10px 12px;
   border: 1px solid #565869;
   border-radius: 12px;
   background-color: #40414f;
   color: #ececf1;
-  font-size: 15px;
+  font-size: var(--font-size-base);
   resize: none;
   outline: none;
   font-family: inherit;
   min-height: 24px;
-  max-height: 200px;
+  max-height: 20vh;
   overflow-y: auto;
 }
 
@@ -305,11 +334,14 @@
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 14px 20px;
+  padding: 10px 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  transition: transform 0.2s;
+  justify-content: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+  min-height: 44px; /* Touch target size */
+  min-width: 44px; /* Touch target size */
 }
 
 .ask-button:hover:not(:disabled) {
@@ -320,6 +352,8 @@
 .ask-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .loader-spin {
@@ -344,10 +378,47 @@
   border-radius: 4px;
 }
 
+/* Responsive Breakpoints */
+
+/* Small devices (phones, 768px and down) */
 @media (max-width: 768px) {
   .user-bubble,
   .bot-bubble {
-    max-width: 85%;
+    max-width: 90%;
+  }
+
+  .chat-header h2 {
+    text-align: center;
+  }
+
+  .rl-toggle {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+}
+
+/* Extra small devices (phones, 480px and down) */
+@media (max-width: 480px) {
+  :root {
+    --header-height: 50px;
+    --padding-base: 12px;
+  }
+
+  .chat-header h2 {
+    font-size: 16px; /* Override clamp for very small screens */
+  }
+
+  .toggle-text {
+    display: none; /* Hide text on very small screens */
+  }
+
+  .ask-button span {
+    display: none; /* Hide text in button */
+  }
+
+  .ask-button .loader-spin {
+    margin: 0;
   }
 }
 

@@ -73,7 +73,10 @@ const Chatbot = () => {
   };
 
   const deleteSession = async (sessionId, event) => {
-    event.stopPropagation();
+    // Handle case where event is not provided (called from Sidebar)
+    if (event && event.stopPropagation) {
+      event.stopPropagation();
+    }
     
     if (!window.confirm('Are you sure you want to delete this chat?')) {
       return;
