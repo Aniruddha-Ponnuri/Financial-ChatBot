@@ -44,3 +44,7 @@ documentation/
 *.bat
 **/data
 **/ruff_cache
+**/.vscode
+**/.idea
+**/.venv
+**/.pytest_cache

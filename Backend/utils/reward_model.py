@@ -1,18 +1,32 @@
-"""
-Reward Model for Reinforcement Learning
-Uses sentence embeddings and SGD classifier for scoring candidate responses
+"""Reward Model for Reinforcement Learning
+
+This module provides a small, production-minded wrapper around a
+sentence-transformer embedding model and an incremental
+``sklearn.linear_model.SGDClassifier`` trained with ``partial_fit``.
+
+Key improvements:
+- thread-safety around model access
+- safer persistence using ``joblib`` when available
+- defensive checks for ``predict_proba`` availability
 """
 
-import os
+from __future__ import annotations
+
+from pathlib import Path
 import pickle
+import threading
+
 import numpy as np
+
 from .logger import CustomLogger
 
 
 class RewardModel:
-    """
-    Reward model that learns from human feedback to score responses.
-    Uses sentence transformers for embeddings and SGDClassifier for incremental learning.
+    """Reward model that learns from human feedback to score responses.
+
+    Args:
+        config: config object exposing `get_rl_config(key, default)`
+        logger: instance of `CustomLogger`
     """
 
     def __init__(self, config, logger: CustomLogger):
@@ -22,26 +36,31 @@ class RewardModel:
         self.logger.info("Initializing Reward Model")
 
         # Get configuration
-        self.embed_model_name = config.get_rl_config(
+        self.embed_model_name: str = config.get_rl_config(
             "reward_model.embedding_model", "all-MiniLM-L6-v2"
         )
-        self.min_samples = config.get_rl_config("reward_model.min_samples_for_training", 20)
+        self.min_samples: int = config.get_rl_config(
+            "reward_model.min_samples_for_training", 20
+        )
+        self.batch_size: int = config.get_rl_config("reward_model.batch_size", 32)
 
         self.logger.info(f"Configuration - Embedding model: {self.embed_model_name}")
         self.logger.info(f"Configuration - Min samples for training: {self.min_samples}")
+        self.logger.info(f"Configuration - Embedding batch size: {self.batch_size}")
 
         # Model directory setup
-        self.model_dir = os.path.join(os.path.dirname(__file__), "model_data")
-        os.makedirs(self.model_dir, exist_ok=True)
+        self.model_dir: Path = Path(__file__).parent.joinpath("model_data")
+        self.model_dir.mkdir(parents=True, exist_ok=True)
         self.logger.info(f"Model directory: {self.model_dir}")
 
-        self.clf_path = os.path.join(self.model_dir, "reward_classifier.pkl")
+        self.clf_path: Path = self.model_dir.joinpath("reward_classifier.pkl")
         self.logger.info(f"Classifier path: {self.clf_path}")
 
-        # Initialize models
+        # Initialize models and concurrency primitives
         self.embed_model = None
         self.clf = None
-        self.training_count = 0
+        self.training_count: int = 0
+        self._lock = threading.RLock()
 
         self._initialize_models()
         self.logger.info("Reward Model initialization complete")
@@ -59,12 +78,28 @@ class RewardModel:
             self.logger.info("Sentence transformer model loaded successfully")
 
             # Try to load existing classifier
-            if os.path.exists(self.clf_path):
+            if self.clf_path.exists():
                 self.logger.info(f"Found existing classifier at {self.clf_path}")
-                with open(self.clf_path, "rb") as f:
-                    saved_data = pickle.load(f)
-                    self.clf = saved_data["classifier"]
-                    self.training_count = saved_data.get("training_count", 0)
+                try:
+                    # Prefer joblib for sklearn artifacts if available
+                    try:
+                        import joblib  # type: ignore
+
+                        saved_data = joblib.load(self.clf_path)
+                    except Exception:
+                        with open(self.clf_path, "rb") as f:
+                            saved_data = pickle.load(f)
+
+                    self.clf = saved_data.get("classifier") if isinstance(saved_data, dict) else saved_data.get(
+                        "classifier"
+                    ) if isinstance(saved_data, dict) else saved_data
+                    self.training_count = (
+                        saved_data.get("training_count", 0) if isinstance(saved_data, dict) else 0
+                    )
+                except Exception as e:
+                    self.logger.error(f"Failed to load existing classifier: {e}")
+                    self.clf = None
+                    self.training_count = 0
                 self.logger.info(
                     f"Loaded existing reward model (trained on {self.training_count} samples)"
                 )
@@ -91,7 +126,13 @@ class RewardModel:
             raise RuntimeError("Embedding model not initialized")
 
         self.logger.info(f"Generating embeddings for {len(texts)} texts")
-        embeddings = self.embed_model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
+        with self._lock:
+            embeddings = self.embed_model.encode(
+                texts,
+                convert_to_numpy=True,
+                batch_size=self.batch_size,
+                show_progress_bar=False,
+            )
         self.logger.info(f"Embeddings generated - shape: {embeddings.shape}")
         return embeddings
 
@@ -123,22 +164,33 @@ class RewardModel:
             self.logger.info("Generating embeddings for score prediction")
             X = self._embed_texts(texts)
 
-            self.logger.info("Predicting probabilities with classifier")
-            # Get probability predictions
-            probs = self.clf.predict_proba(X)
-            self.logger.info(f"Probabilities calculated - shape: {probs.shape}")
+            with self._lock:
+                # Ensure classifier supports probability estimates
+                if not hasattr(self.clf, "predict_proba"):
+                    self.logger.warning("Classifier does not support predict_proba - returning uniform scores")
+                    return [0.5] * len(texts)
 
-            # Get index for positive class (1)
-            if 1 in self.clf.classes_:
-                class_index = list(self.clf.classes_).index(1)
-                scores = probs[:, class_index].tolist()
-                self.logger.info(f"Using positive class (1) at index {class_index}")
-            else:
-                # Fallback if only one class seen
-                self.logger.warning(
-                    "Classifier has not seen both classes yet - returning uniform scores"
-                )
-                scores = [0.5] * len(texts)
+                classes = getattr(self.clf, "classes_", None)
+                if classes is None or len(classes) < 2:
+                    self.logger.warning(
+                        "Classifier has not seen both classes yet - returning uniform scores"
+                    )
+                    return [0.5] * len(texts)
+
+                self.logger.info("Predicting probabilities with classifier")
+                probs = self.clf.predict_proba(X)
+                self.logger.info(f"Probabilities calculated - shape: {probs.shape}")
+
+                # Get index for positive class (1)
+                if 1 in classes:
+                    class_index = list(classes).index(1)
+                    scores = probs[:, class_index].tolist()
+                    self.logger.info(f"Using positive class (1) at index {class_index}")
+                else:
+                    self.logger.warning(
+                        "Positive class label '1' not found in classifier classes - returning uniform scores"
+                    )
+                    scores = [0.5] * len(texts)
 
             self.logger.info(f"Score prediction complete - scores: {[f'{s:.4f}' for s in scores]}")
             return scores
@@ -178,7 +230,7 @@ class RewardModel:
             X = self._embed_texts(texts)
             y = np.array(labels)
 
-            positive_count = sum(y)
+            positive_count = int(np.sum(y))
             negative_count = len(y) - positive_count
 
             self.logger.info(f"Updating reward model with {len(texts)} samples")
@@ -187,24 +239,25 @@ class RewardModel:
             )
             self.logger.info(f"Positive ratio: {positive_count / len(y) * 100:.1f}%")
 
-            if self.clf is None:
-                self.logger.info("No existing classifier - creating new SGDClassifier")
-                # Initialize classifier with both classes
-                self.clf = SGDClassifier(
-                    loss="log_loss",  # For probability estimates
-                    max_iter=1000,
-                    tol=1e-3,
-                    random_state=42,
-                )
-                # First fit requires classes parameter
-                self.logger.info("Performing initial fit with classes [0, 1]")
-                self.clf.partial_fit(X, y, classes=np.array([0, 1]))
-                self.logger.info("New reward classifier created and trained")
-            else:
-                # Incremental update
-                self.logger.info("Existing classifier found - performing incremental update")
-                self.clf.partial_fit(X, y)
-                self.logger.info("Incremental update completed")
+            with self._lock:
+                if self.clf is None:
+                    self.logger.info("No existing classifier - creating new SGDClassifier")
+                    # Initialize classifier with both classes
+                    self.clf = SGDClassifier(
+                        loss="log_loss",  # For probability estimates
+                        max_iter=1000,
+                        tol=1e-3,
+                        random_state=42,
+                    )
+                    # First fit requires classes parameter
+                    self.logger.info("Performing initial fit with classes [0, 1]")
+                    self.clf.partial_fit(X, y, classes=np.array([0, 1]))
+                    self.logger.info("New reward classifier created and trained")
+                else:
+                    # Incremental update
+                    self.logger.info("Existing classifier found - performing incremental update")
+                    self.clf.partial_fit(X, y)
+                    self.logger.info("Incremental update completed")
 
             self.training_count += len(texts)
             self.logger.info(f"Total training samples: {self.training_count}")
@@ -225,12 +278,15 @@ class RewardModel:
         """Persist the classifier to disk"""
         try:
             self.logger.info(f"Saving reward model to {self.clf_path}")
-            saved_data = {
-                "classifier": self.clf,
-                "training_count": self.training_count,
-            }
-            with open(self.clf_path, "wb") as f:
-                pickle.dump(saved_data, f)
+            saved_data = {"classifier": self.clf, "training_count": self.training_count}
+            try:
+                import joblib  # type: ignore
+
+                joblib.dump(saved_data, self.clf_path)
+            except Exception:
+                with open(self.clf_path, "wb") as f:
+                    pickle.dump(saved_data, f)
+
             self.logger.info(
                 f"Reward model saved successfully (total training samples: {self.training_count})"
             )
@@ -240,8 +296,9 @@ class RewardModel:
 
     def is_ready(self):
         """Check if model is ready for inference"""
-        return self.clf is not None
+        with self._lock:
+            return self.clf is not None
 
     def get_training_count(self):
         """Get number of samples the model has been trained on"""
-        return self.training_count
+        return int(self.training_count)
