@@ -1,7 +1,7 @@
-import sqlite3
 import os
-from datetime import datetime
-from typing import List, Dict, Optional, Tuple
+import sqlite3
+from typing import Any
+
 from .logger import CustomLogger
 
 
@@ -106,8 +106,8 @@ class FeedbackDatabase:
         question: str,
         answer: str,
         rating: int,
-        session_id: Optional[str] = None,
-        metadata: Optional[str] = None,
+        session_id: str | None = None,
+        metadata: str | None = None,
     ) -> int:
         """
         Save user feedback to database.
@@ -148,7 +148,7 @@ class FeedbackDatabase:
             self.logger.error(f"Error saving feedback: {e}")
             raise
 
-    def get_all_feedback(self, limit: Optional[int] = None) -> List[Dict]:
+    def get_all_feedback(self, limit: int | None = None) -> list[dict[str, Any]]:
         """
         Retrieve all feedback records.
 
@@ -179,7 +179,7 @@ class FeedbackDatabase:
             self.logger.error(f"Error retrieving feedback: {e}")
             return []
 
-    def get_feedback_for_training(self, min_samples: int = 0) -> Tuple[List[str], List[int]]:
+    def get_feedback_for_training(self, min_samples: int = 0) -> tuple[list[str], list[int]]:
         """
         Get feedback data formatted for model training.
 
@@ -220,7 +220,7 @@ class FeedbackDatabase:
             self.logger.error(f"Error getting training data: {e}")
             return [], []
 
-    def get_recent_feedback(self, days: int = 7) -> List[Dict]:
+    def get_recent_feedback(self, days: int = 7) -> list[dict[str, Any]]:
         """
         Get feedback from the last N days.
 
@@ -257,7 +257,7 @@ class FeedbackDatabase:
             self.logger.error(f"Error retrieving recent feedback: {e}")
             return []
 
-    def get_feedback_stats(self) -> Dict:
+    def get_feedback_stats(self) -> dict[str, int]:
         """
         Get statistics about stored feedback.
 
@@ -437,7 +437,7 @@ class FeedbackDatabase:
             self.logger.error(f"Error updating session timestamp: {e}")
             return False
 
-    def get_all_sessions(self) -> List[Dict]:
+    def get_all_sessions(self) -> list[dict[str, Any]]:
         """
         Get all chat sessions ordered by most recent.
 
@@ -466,7 +466,7 @@ class FeedbackDatabase:
             self.logger.error(f"Error retrieving sessions: {e}")
             return []
 
-    def get_session(self, session_id: str) -> Optional[Dict]:
+    def get_session(self, session_id: str) -> dict[str, Any] | None:
         """Get a single session by ID."""
         try:
             conn = self._get_connection()
@@ -553,7 +553,7 @@ class FeedbackDatabase:
             self.logger.error(f"Error saving message: {e}")
             return -1
 
-    def get_session_messages(self, session_id: str) -> List[Dict]:
+    def get_session_messages(self, session_id: str) -> list[dict[str, Any]]:
         """
         Get all messages for a session.
 
