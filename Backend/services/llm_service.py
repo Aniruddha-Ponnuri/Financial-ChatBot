@@ -1,6 +1,6 @@
 """
 LangChain-based LLM Service - Modular provider support
-Supports: OpenAI, Azure OpenAI, Groq, Anthropic
+Supports: OpenAI, Azure OpenAI, Groq, Anthropic, NVIDIA
 """
 
 import os
@@ -17,6 +17,13 @@ try:
 except ImportError:
     ANTHROPIC_AVAILABLE = False
 
+try:
+    from langchain_nvidia_ai_endpoints import ChatNVIDIA
+
+    NVIDIA_AVAILABLE = True
+except ImportError:
+    NVIDIA_AVAILABLE = False
+
 
 class LLMService:
     """Unified LLM service supporting multiple providers via LangChain"""
@@ -26,6 +33,7 @@ class LLMService:
         "azure": "Azure OpenAI",
         "groq": "Groq",
         "anthropic": "Anthropic",
+        "nvidia": "NVIDIA",
     }
 
     def __init__(
@@ -40,7 +48,7 @@ class LLMService:
         Initialize LLM service with specified provider
 
         Args:
-            provider: Provider name (openai, azure, groq, anthropic)
+            provider: Provider name (openai, azure, groq, anthropic, nvidia)
             model_name: Model identifier
             temperature: Sampling temperature (0.0-2.0)
             max_tokens: Maximum tokens in response
@@ -122,6 +130,22 @@ class LLMService:
             return ChatAnthropic(
                 api_key=api_key,
                 model_name=self.model_name,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+            )
+
+        elif self.provider == "nvidia":
+            if not NVIDIA_AVAILABLE:
+                raise ValueError(
+                    "NVIDIA support not installed. Run: pip install langchain-nvidia-ai-endpoints"
+                )
+            api_key = os.getenv("NVIDIA_API_KEY")
+            if not api_key:
+                raise ValueError("NVIDIA_API_KEY not found in environment")
+
+            return ChatNVIDIA(
+                api_key=api_key,
+                model=self.model_name,
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
             )
@@ -320,6 +344,15 @@ class LLMService:
                 temperature=temp,
                 max_tokens=tokens,
             )
+        elif self.provider == "nvidia":
+            if not NVIDIA_AVAILABLE:
+                raise ValueError("NVIDIA support not installed")
+            return ChatNVIDIA(
+                api_key=os.getenv("NVIDIA_API_KEY"),
+                model=self.model_name,
+                temperature=temp,
+                max_tokens=tokens,
+            )
 
     @staticmethod
     def from_env(logger=None) -> "LLMService":
@@ -327,7 +360,7 @@ class LLMService:
         Create LLMService instance from environment variables
 
         Required env vars:
-            - LLM_PROVIDER: openai, azure, groq, or anthropic
+            - LLM_PROVIDER: openai, azure, groq, anthropic, or nvidia
             - LLM_MODEL_NAME: Model identifier
             - LLM_TEMPERATURE: Temperature (default 0.7)
             - LLM_MAX_TOKENS: Max tokens (default 2000)
@@ -339,6 +372,7 @@ class LLMService:
                    AZURE_OPENAI_DEPLOYMENT_NAME (optional)
             Groq: GROQ_API_KEY
             Anthropic: ANTHROPIC_API_KEY
+            NVIDIA: NVIDIA_API_KEY
 
         Raises:
             ValueError: If required environment variables are missing
@@ -408,6 +442,15 @@ class LLMService:
                     logger.info(f"Azure Endpoint: {endpoint if endpoint else 'NOT SET'}")
                 if not endpoint:
                     error_msg = "AZURE_OPENAI_ENDPOINT required for Azure provider"
+                    if logger:
+                        logger.error(error_msg)
+                    raise ValueError(error_msg)
+            elif provider.lower() == "nvidia":
+                nvidia_key = os.getenv("NVIDIA_API_KEY")
+                if logger:
+                    logger.info(f"NVIDIA API Key: {'SET' if nvidia_key else 'NOT SET'}")
+                if not nvidia_key:
+                    error_msg = "NVIDIA_API_KEY required for NVIDIA provider"
                     if logger:
                         logger.error(error_msg)
                     raise ValueError(error_msg)

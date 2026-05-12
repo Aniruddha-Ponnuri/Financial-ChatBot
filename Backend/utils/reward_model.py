@@ -53,7 +53,6 @@ class RewardModel:
 
             # Import here to avoid issues if not installed yet
             from sentence_transformers import SentenceTransformer
-            from sklearn.linear_model import SGDClassifier
 
             self.logger.info(f"Loading sentence transformer model: {self.embed_model_name}")
             self.embed_model = SentenceTransformer(self.embed_model_name)

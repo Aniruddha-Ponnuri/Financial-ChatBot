@@ -54,7 +54,7 @@ def run_provider_test(provider_name):
             max_tokens=10,
         )
 
-        print(f"✓ Generation successful")
+        print("✓ Generation successful")
         print(f"  Response: {response[:100]}")
 
         return True
@@ -82,7 +82,7 @@ def main():
         print("\n✗ ERROR: LLM_MODEL_NAME not set in .env")
         sys.exit(1)
 
-    print(f"\nEnvironment Configuration:")
+    print("\nEnvironment Configuration:")
     print(f"  Provider: {provider}")
     print(f"  Model: {model}")
     print(f"  Temperature: {os.getenv('LLM_TEMPERATURE', '0.7')}")
@@ -94,6 +94,7 @@ def main():
         "azure": "AZURE_OPENAI_API_KEY",
         "groq": "GROQ_API_KEY",
         "anthropic": "ANTHROPIC_API_KEY",
+        "nvidia": "NVIDIA_API_KEY",
     }
 
     required_key = api_key_vars.get(provider.lower())

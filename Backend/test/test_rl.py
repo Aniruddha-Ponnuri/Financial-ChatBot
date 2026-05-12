@@ -166,7 +166,7 @@ def test_stock_queries():
                 detected_symbols = data.get("stock_symbols", [])
                 answer = data.get("answer", "")
 
-                print(f"✓ Status: Success")
+                print("✓ Status: Success")
                 print(f"Detected Symbols: {detected_symbols}")
                 print(f"Expected Symbols: {test['expected_symbols']}")
 

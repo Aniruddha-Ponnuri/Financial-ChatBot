@@ -139,6 +139,8 @@ class DefaultConfig:
                     cls.API_KEY = config_reader.read_config_value("AZURE_OPENAI_API_KEY")
                 elif provider == "anthropic":
                     cls.API_KEY = config_reader.read_config_value("ANTHROPIC_API_KEY")
+                elif provider == "nvidia":
+                    cls.API_KEY = config_reader.read_config_value("NVIDIA_API_KEY")
                 else:
                     cls.logger.warning(f"Unknown provider: {provider}")
                     cls.API_KEY = None

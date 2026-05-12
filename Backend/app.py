@@ -1,4 +1,5 @@
 import os
+import re
 import threading
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -74,6 +75,32 @@ else:
 parsed_knowledge_base = ""  # This holds the parsed knowledge base content
 logger.info("Backend initialization complete")
 logger.info("=" * 80)
+
+STOCK_QUERY_KEYWORDS = {
+    "stock",
+    "stocks",
+    "share",
+    "shares",
+    "ticker",
+    "price",
+    "market cap",
+    "pe ratio",
+    "eps",
+    "nifty",
+    "sensex",
+    "nse",
+    "bse",
+    "invest",
+}
+MAX_EXTRACTED_STOCK_SYMBOLS = 5
+
+
+def _looks_like_stock_query(question: str) -> bool:
+    """Fast pre-check to avoid expensive extraction for clearly non-stock prompts."""
+    lowered = question.lower()
+    if any(keyword in lowered for keyword in STOCK_QUERY_KEYWORDS):
+        return True
+    return bool(re.search(r"\b[A-Z]{2,10}(?:\.(?:NS|BO))?\b", question))
 
 
 def parse_content(content, parse_description):
@@ -247,6 +274,10 @@ def extract_stock_symbols(question):
             logger.error("extract_stock_symbols called with empty question")
             raise ValueError("Question cannot be empty")
 
+        if not _looks_like_stock_query(question):
+            logger.info("Stock query heuristic did not match; skipping extraction")
+            return [], False
+
         logger.info("=" * 60)
         logger.info(f"Extracting stock symbols from question: '{question[:100]}...'")
         logger.info(f"Question length: {len(question)} characters")
@@ -293,16 +324,42 @@ def extract_stock_symbols(question):
                 logger.warning(f"symbols is not a list: {type(symbols)}, converting to list")
                 symbols = [symbols] if symbols else []
 
+            # Normalize, validate, deduplicate, and cap extracted symbols
+            cleaned_symbols = []
+            seen = set()
+            for symbol in symbols:
+                if not isinstance(symbol, str):
+                    continue
+                normalized = symbol.strip().upper()
+                if not normalized:
+                    continue
+                if not re.fullmatch(r"[A-Z0-9.-]{1,15}", normalized):
+                    continue
+                if normalized in seen:
+                    continue
+                seen.add(normalized)
+                cleaned_symbols.append(normalized)
+
+            if len(cleaned_symbols) > MAX_EXTRACTED_STOCK_SYMBOLS:
+                logger.warning(
+                    "Trimming extracted symbols from %s to %s",
+                    len(cleaned_symbols),
+                    MAX_EXTRACTED_STOCK_SYMBOLS,
+                )
+                cleaned_symbols = cleaned_symbols[:MAX_EXTRACTED_STOCK_SYMBOLS]
+
             # Validate is_stock_query is boolean
             if not isinstance(is_stock_query, bool):
                 logger.warning(f"is_stock_query is not boolean: {type(is_stock_query)}, converting")
                 is_stock_query = bool(is_stock_query)
 
             logger.info(
-                f"Successfully extracted - symbols: {symbols}, is_stock_query: {is_stock_query}"
+                "Successfully extracted - symbols: %s, is_stock_query: %s",
+                cleaned_symbols,
+                is_stock_query,
             )
             logger.info("=" * 60)
-            return symbols, is_stock_query
+            return cleaned_symbols, bool(is_stock_query and cleaned_symbols)
         else:
             logger.warning(f"No JSON found in LLM response: {result_text}")
             logger.info("=" * 60)
