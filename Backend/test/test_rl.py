@@ -3,6 +3,16 @@ Quick test script to verify RL implementation
 Run this after starting the Flask server
 """
 
+import sys
+
+if "pytest" in sys.modules:
+    import pytest
+
+    pytest.skip(
+        "Integration script; run directly with python test/test_rl.py",
+        allow_module_level=True,
+    )
+
 import requests
 import json
 import time

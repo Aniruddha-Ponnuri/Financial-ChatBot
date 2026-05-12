@@ -4,9 +4,9 @@ Setup script for Financial Chatbot Backend
 Installs all required dependencies
 """
 
+import os
 import subprocess
 import sys
-import os
 
 
 def run_command(command, description):
@@ -28,11 +28,7 @@ def main():
     print("  Financial Chatbot - Backend Setup")
     print("=" * 60)
 
-    # Check Python version
     print(f"\nPython version: {sys.version}")
-    if sys.version_info < (3, 8):
-        print("ERROR: Python 3.8 or higher required")
-        sys.exit(1)
 
     # Upgrade pip
     if not run_command(f"{sys.executable} -m pip install --upgrade pip", "Upgrading pip"):
@@ -42,7 +38,7 @@ def main():
     requirements_path = os.path.join(os.path.dirname(__file__), "requirements.txt")
 
     if os.path.exists(requirements_path):
-        print(f"\nInstalling from requirements.txt...")
+        print("\nInstalling from requirements.txt...")
         if not run_command(
             f"{sys.executable} -m pip install -r {requirements_path}",
             "Installing dependencies",

@@ -5,7 +5,20 @@ Tests all provider configurations
 
 import os
 import sys
-from dotenv import load_dotenv
+
+if "pytest" in sys.modules:
+    import pytest
+
+    pytest.skip(
+        "Integration script; run directly with python test/test_llm_service.py",
+        allow_module_level=True,
+    )
+
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError:
+    def load_dotenv():
+        return False
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(__file__))
@@ -13,7 +26,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 load_dotenv()
 
 
-def test_provider(provider_name):
+def run_provider_test(provider_name):
     """Test a specific provider configuration"""
     print(f"\n{'=' * 60}")
     print(f"Testing {provider_name.upper()} Provider")
@@ -104,7 +117,7 @@ def main():
         print(f"  Deployment: {deployment}")
 
     # Run test
-    success = test_provider(provider)
+    success = run_provider_test(provider)
 
     print("\n" + "=" * 60)
     if success:
