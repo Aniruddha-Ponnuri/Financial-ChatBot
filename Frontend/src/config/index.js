@@ -19,7 +19,6 @@ const config = {
     ask: '/ask',
     sessions: '/sessions',
     sessionById: (id) => `/sessions/${id}`,
-    feedback: '/feedback',
     health: '/health',
   },
 
@@ -32,7 +31,6 @@ const config = {
   // Feature Flags
   features: {
     sessionPersistence: true,
-    feedback: true,
   },
 };
 

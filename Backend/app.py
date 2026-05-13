@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 # Import custom modules
 from config import DefaultConfig
 from utils.logger import CustomLogger
-from utils.database import FeedbackDatabase
+from utils.database import ChatDatabase
 from utils.helpers import format_message_as_html, remove_html_tags
 from utils.stock_data import StockDataFetcher
 from services.llm_service import LLMService
@@ -27,7 +27,7 @@ DefaultConfig.initialise()
 config = DefaultConfig.bot_config
 logger.info("Configuration loaded successfully")
 
-# Initialize LLM Service (replaces Groq client)
+# Initialize LLM Service
 logger.info("Initializing LLM Service")
 try:
     llm_service = LLMService.from_env(logger=logger)
@@ -45,18 +45,17 @@ logger.info("Flask app initialized with CORS enabled")
 # Initialize database
 db_folder = os.path.join(os.path.dirname(__file__), config.get("database.folder", "data"))
 os.makedirs(db_folder, exist_ok=True)
-db_filename = config.get("database.path", "feedback.db")
+db_filename = config.get("database.path", "chat.db")
 db_path = os.path.join(db_folder, db_filename)
-logger.info(f"Initializing feedback database at: {db_path}")
-feedback_db = FeedbackDatabase(db_path, logger)
-logger.info("Feedback database initialized")
+logger.info(f"Initializing chat database at: {db_path}")
+chat_db = ChatDatabase(db_path, logger)
+logger.info("Chat database initialized")
 
 # Initialize stock data fetcher
 logger.info("Initializing stock data fetcher")
 stock_fetcher = StockDataFetcher(logger)
 logger.info("Stock data fetcher initialized successfully")
 
-parsed_knowledge_base = ""  # This holds the parsed knowledge base content
 logger.info("Backend initialization complete")
 logger.info("=" * 80)
 
@@ -306,8 +305,6 @@ def ask_question():
     Returns:
         JSON with answer, history, and stock symbols
     """
-    global parsed_knowledge_base
-
     logger.info("=" * 80)
     logger.info("Received POST request to /ask endpoint")
     logger.info(f"Request time: {__import__('datetime').datetime.now()}")
@@ -339,15 +336,7 @@ def ask_question():
             logger.info("=" * 80)
             return jsonify({"error": "Question cannot be empty"}), 400
 
-        # Check if the knowledge base is empty or not
-        if parsed_knowledge_base:
-            knowledge_base_prompt = (
-                f"Here is some knowledge that can help:\n{parsed_knowledge_base}\n\n"
-            )
-            logger.info(f"Using knowledge base (length: {len(parsed_knowledge_base)} chars)")
-        else:
-            knowledge_base_prompt = ""
-            logger.info("No knowledge base available")
+        knowledge_base_prompt = ""
 
         # Extract stock symbols from the question
         logger.info("Starting stock symbol extraction process")
@@ -469,7 +458,7 @@ def ask_question():
             try:
                 logger.info(f"Managing session: {session_id}")
                 # Check if this is a new session (first message)
-                session = feedback_db.get_session(session_id)
+                session = chat_db.get_session(session_id)
                 if not session:
                     # Create new session with generated title
                     logger.info("Creating new session")
@@ -479,16 +468,16 @@ def ask_question():
                         logger.error(f"Failed to generate session title: {e}")
                         title = "New Chat"
 
-                    feedback_db.create_session(session_id, title)
+                    chat_db.create_session(session_id, title)
                     is_new_session = True
                     logger.info(f"New session created with title: '{title}'")
                 else:
                     logger.info(f"Existing session found: '{session.get('title', 'Untitled')}'")
 
                 # Save user message
-                feedback_db.save_message(session_id, "user", question)
+                chat_db.save_message(session_id, "user", question)
                 # Save assistant message
-                feedback_db.save_message(
+                chat_db.save_message(
                     session_id,
                     "assistant",
                     formatted_answer,
@@ -513,7 +502,7 @@ def ask_question():
         if is_new_session and session_id:
             try:
                 # Return session info for new sessions
-                session = feedback_db.get_session(session_id)
+                session = chat_db.get_session(session_id)
                 if session:
                     response_data["session"] = session
                     logger.info("Session info added to response")
@@ -621,94 +610,6 @@ def summarize_conversation(conversation, max_tokens=1000):
         return "Error summarizing conversation"
 
 
-@app.route("/feedback", methods=["POST"])
-def submit_feedback():
-    """
-    Submit user feedback on a response.
-    Expected JSON: {
-        "question": str,
-        "answer": str,
-        "rating": int (0 or 1),
-        "session_id": str (optional)
-    }
-    """
-    try:
-        logger.info("=" * 60)
-        logger.info("Received POST request to /feedback endpoint")
-
-        data = request.json
-        question = data.get("question")
-        answer = data.get("answer")
-        rating = data.get("rating")
-        session_id = data.get("session_id")
-
-        logger.info(f"Feedback data - Question length: {len(question) if question else 0}")
-        logger.info(f"Feedback data - Answer length: {len(answer) if answer else 0}")
-        logger.info(f"Feedback data - Rating: {rating}")
-        logger.info(f"Feedback data - Session ID: {session_id}")
-
-        if not question or not answer or rating is None:
-            logger.error("Missing required fields in feedback submission")
-            return jsonify({"error": "question, answer, and rating are required"}), 400
-
-        # Validate rating
-        try:
-            rating_int = int(rating)
-            if rating_int not in (0, 1):
-                logger.error(f"Invalid rating value: {rating_int} (must be 0 or 1)")
-                return jsonify({"error": "rating must be 0 (negative) or 1 (positive)"}), 400
-        except (ValueError, TypeError):
-            logger.error(f"Invalid rating type: {type(rating)}")
-            return jsonify({"error": "rating must be an integer (0 or 1)"}), 400
-
-        # Save feedback to database
-        logger.info("Saving feedback to database")
-        feedback_id = feedback_db.save_feedback(
-            question=question,
-            answer=answer,
-            rating=rating_int,
-            session_id=session_id,
-        )
-
-        logger.info(f"Feedback saved successfully with ID: {feedback_id}")
-
-        logger.info("Feedback submission completed successfully")
-        logger.info("=" * 60)
-
-        return jsonify(
-            {
-                "status": "success",
-                "feedback_id": feedback_id,
-                "message": "Feedback recorded successfully",
-            }
-        ), 200
-
-    except Exception as e:
-        logger.error(f"Error submitting feedback: {e}")
-        logger.error(f"Error type: {type(e).__name__}")
-        logger.error("=" * 60)
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/feedback/stats", methods=["GET"])
-def get_feedback_stats():
-    """Get statistics about feedback data"""
-    try:
-        logger.info("Received GET request to /feedback/stats endpoint")
-
-        logger.info("Retrieving feedback statistics from database")
-        stats = feedback_db.get_feedback_stats()
-        logger.info(f"Database stats: {stats}")
-
-        logger.info("Successfully compiled feedback statistics")
-        return jsonify(stats), 200
-
-    except Exception as e:
-        logger.error(f"Error getting feedback stats: {e}")
-        logger.error(f"Error type: {type(e).__name__}")
-        return jsonify({"error": str(e)}), 500
-
-
 # Chat Session Management Endpoints
 
 
@@ -717,7 +618,7 @@ def get_sessions():
     """Get all chat sessions."""
     try:
         logger.info("Received GET request to /sessions endpoint")
-        sessions = feedback_db.get_all_sessions()
+        sessions = chat_db.get_all_sessions()
         logger.info(f"Returning {len(sessions)} sessions")
 
         return jsonify({"sessions": sessions}), 200
@@ -733,11 +634,11 @@ def get_session(session_id):
     try:
         logger.info(f"Received GET request to /sessions/{session_id} endpoint")
 
-        session = feedback_db.get_session(session_id)
+        session = chat_db.get_session(session_id)
         if not session:
             return jsonify({"error": "Session not found"}), 404
 
-        messages = feedback_db.get_session_messages(session_id)
+        messages = chat_db.get_session_messages(session_id)
 
         # Format messages for frontend
         formatted_messages = []
@@ -765,7 +666,7 @@ def delete_session(session_id):
     try:
         logger.info(f"Received DELETE request to /sessions/{session_id} endpoint")
 
-        success = feedback_db.delete_session(session_id)
+        success = chat_db.delete_session(session_id)
 
         if success:
             logger.info(f"Session {session_id} deleted successfully")

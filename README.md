@@ -8,7 +8,6 @@ An AI financial advisory chatbot focused on Indian markets. It supports Groq and
 - Real-time stock data via yfinance
 - Automatic stock symbol extraction from questions
 - Session history with titled conversations
-- Feedback collection for response quality
 - Centralized YAML prompt configuration
 - Structured logging
 
@@ -111,8 +110,6 @@ npm start
 | Endpoint | Method | Description | Request Body |
 |----------|--------|-------------|--------------|
 | `/ask` | POST | Get chatbot response | `{question, history, session_id}` |
-| `/feedback` | POST | Submit user rating | `{question, answer, rating, session_id}` |
-| `/feedback/stats` | GET | Get feedback statistics | - |
 | `/sessions` | GET | List chat sessions | - |
 | `/sessions/<session_id>` | GET | Session messages | - |
 | `/sessions/<session_id>` | DELETE | Delete session | - |
@@ -129,16 +126,13 @@ Financial-ChatBot/
 │   ├── services/
 │   │   └── llm_service.py  # Groq/NVIDIA integration
 │   ├── utils/
-│   │   ├── database.py     # SQLite feedback and sessions
+│   │   ├── database.py     # SQLite chat sessions
 │   │   └── stock_data.py   # Market data fetcher
 ├── Frontend/
 │   ├── src/
 │   │   ├── Chatbot.js      # React chatbot component
 │   │   └── Chatbot.css     # Styles
-└── documentation/
-    ├── LLM_PROVIDER_GUIDE.md
-    └── QUICK_PROVIDER_REFERENCE.md
-```
+
 
 ## Troubleshooting
 

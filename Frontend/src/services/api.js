@@ -36,17 +36,6 @@ const apiService = {
     return response.data;
   },
 
-  // Feedback endpoint
-  submitFeedback: async (question, answer, rating, sessionId) => {
-    const response = await apiClient.post(config.endpoints.feedback, {
-      question,
-      answer,
-      rating,
-      session_id: sessionId,
-    });
-    return response.data;
-  },
-
   // Health check
   healthCheck: async () => {
     const response = await apiClient.get(config.endpoints.health);

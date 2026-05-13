@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Loader, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Send, Loader } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -15,7 +15,6 @@ const Chatbot = () => {
   const [loading, setLoading] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [sessions, setSessions] = useState([]);
-  const [feedbackGiven, setFeedbackGiven] = useState({});
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loadingSessions, setLoadingSessions] = useState(false);
 
@@ -54,7 +53,6 @@ const Chatbot = () => {
       setCurrentSessionId(sessionId);
       setConversation(data.messages || []);
       setSummarizedHistory('');
-      setFeedbackGiven({});
     } catch (error) {
       console.error('Error loading session:', error.message);
       alert('Failed to load session: ' + error.message);
@@ -68,7 +66,6 @@ const Chatbot = () => {
     setCurrentSessionId(newSessionId);
     setConversation([]);
     setSummarizedHistory('');
-    setFeedbackGiven({});
   };
 
   const deleteSession = async (sessionId, event) => {
@@ -120,7 +117,6 @@ const Chatbot = () => {
       const assistantMessage = {
         role: 'assistant',
         content: data.answer,
-        question: userQuestion,
         timestamp: Date.now(),
       };
 
@@ -135,34 +131,6 @@ const Chatbot = () => {
       alert('Failed to get response: ' + error.message);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleFeedback = async (messageIndex, rating) => {
-    const message = conversation[messageIndex];
-    
-    if (!message || message.role !== 'assistant') {
-      console.error('Invalid message for feedback');
-      return;
-    }
-
-    try {
-      await apiService.submitFeedback(
-        message.question,
-        message.content,
-        rating,
-        currentSessionId
-      );
-
-      setFeedbackGiven(prev => ({
-        ...prev,
-        [messageIndex]: rating,
-      }));
-
-      console.log(`Feedback submitted: ${rating === 1 ? 'Positive' : 'Negative'}`);
-    } catch (error) {
-      console.error('Error submitting feedback:', error.message);
-      alert('Failed to submit feedback: ' + error.message);
     }
   };
 
@@ -247,28 +215,6 @@ const Chatbot = () => {
                       </ReactMarkdown>
                     ) : (
                       <div>{msg.content}</div>
-                    )}
-                    
-                    {/* Feedback Buttons */}
-                    {msg.role === 'assistant' && (
-                      <div className="feedback-buttons">
-                        <button
-                          className={`feedback-btn ${feedbackGiven[index] === 1 ? 'active-positive' : ''}`}
-                          onClick={() => handleFeedback(index, 1)}
-                          disabled={feedbackGiven[index] !== undefined}
-                          title="Good response"
-                        >
-                          <ThumbsUp size={16} />
-                        </button>
-                        <button
-                          className={`feedback-btn ${feedbackGiven[index] === 0 ? 'active-negative' : ''}`}
-                          onClick={() => handleFeedback(index, 0)}
-                          disabled={feedbackGiven[index] !== undefined}
-                          title="Poor response"
-                        >
-                          <ThumbsDown size={16} />
-                        </button>
-                      </div>
                     )}
                   </div>
                 </div>

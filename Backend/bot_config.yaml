@@ -214,7 +214,7 @@ model:
 # Database Configuration
 database:
   folder: "data"
-  path: "feedback.db"
+  path: "chat.db"
 # Logging Configuration
 logging:
   level: "INFO"

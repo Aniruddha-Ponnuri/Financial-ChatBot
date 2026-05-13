@@ -186,50 +186,6 @@
   text-decoration: underline;
 }
 
-.feedback-buttons {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-  align-items: center;
-}
-
-.feedback-btn {
-  background: none;
-  border: 1px solid #565869;
-  border-radius: 6px;
-  padding: 6px 10px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  transition: all 0.2s;
-  color: #acacbe;
-  min-height: 44px; /* Touch target size */
-}
-
-.feedback-btn:hover:not(:disabled) {
-  background-color: #2a2b32;
-  border-color: #acacbe;
-  color: #ececf1;
-}
-
-.feedback-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.feedback-btn.active-positive {
-  background-color: #10a37f;
-  border-color: #10a37f;
-  color: white;
-}
-
-.feedback-btn.active-negative {
-  background-color: #ef4146;
-  border-color: #ef4146;
-  color: white;
-}
-
-
 .footer {
   flex: 0 0 auto;
   padding: var(--footer-padding) var(--padding-base);
