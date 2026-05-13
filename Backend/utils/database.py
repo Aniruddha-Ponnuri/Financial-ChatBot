@@ -10,7 +10,6 @@ from .logger import CustomLogger
 class FeedbackDatabase:
     """
     Manages SQLite database for storing user feedback on chatbot responses.
-    Supports feedback storage, retrieval, and batch operations for training.
     Also manages chat sessions and conversation history.
     """
 
@@ -58,7 +57,6 @@ class FeedbackDatabase:
                     role TEXT NOT NULL CHECK(role IN ('user', 'assistant')),
                     content TEXT NOT NULL,
                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    rl_used INTEGER DEFAULT 0,
                     FOREIGN KEY (session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE
                 )
             """)
@@ -180,47 +178,6 @@ class FeedbackDatabase:
         except sqlite3.Error as e:
             self.logger.error(f"Error retrieving feedback: {e}")
             return []
-
-    def get_feedback_for_training(self, min_samples: int = 0) -> tuple[list[str], list[int]]:
-        """
-        Get feedback data formatted for model training.
-
-        Args:
-            min_samples: Minimum number of samples required
-
-        Returns:
-            Tuple of (texts, labels) where texts are "Q: {q}\\nA: {a}" format
-        """
-        try:
-            conn = self._get_connection()
-            cursor = conn.cursor()
-
-            cursor.execute("""
-                SELECT question, answer, rating 
-                FROM feedback 
-                ORDER BY timestamp ASC
-            """)
-
-            rows = cursor.fetchall()
-            conn.close()
-
-            if len(rows) < min_samples:
-                self.logger.warning(f"Insufficient feedback samples: {len(rows)} < {min_samples}")
-                return [], []
-
-            texts = [f"Q: {row['question']}\nA: {row['answer']}" for row in rows]
-            labels = [row["rating"] for row in rows]
-
-            self.logger.info(
-                f"Retrieved {len(texts)} samples for training "
-                f"(Positive: {sum(labels)}, Negative: {len(labels) - sum(labels)})"
-            )
-
-            return texts, labels
-
-        except sqlite3.Error as e:
-            self.logger.error(f"Error getting training data: {e}")
-            return [], []
 
     def get_recent_feedback(self, days: int = 7) -> list[dict[str, Any]]:
         """
@@ -513,7 +470,7 @@ class FeedbackDatabase:
             self.logger.error(f"Error deleting session: {e}")
             return False
 
-    def save_message(self, session_id: str, role: str, content: str, rl_used: bool = False) -> int:
+    def save_message(self, session_id: str, role: str, content: str) -> int:
         """
         Save a chat message to a session.
 
@@ -521,7 +478,6 @@ class FeedbackDatabase:
             session_id: Session identifier
             role: 'user' or 'assistant'
             content: Message content
-            rl_used: Whether RL was used for this response
 
         Returns:
             Message ID if successful, -1 otherwise
@@ -535,10 +491,10 @@ class FeedbackDatabase:
 
             cursor.execute(
                 """
-                INSERT INTO chat_messages (session_id, role, content, rl_used)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO chat_messages (session_id, role, content)
+                VALUES (?, ?, ?)
             """,
-                (session_id, role, content, 1 if rl_used else 0),
+                (session_id, role, content),
             )
 
             message_id = cursor.lastrowid
@@ -571,7 +527,7 @@ class FeedbackDatabase:
 
             cursor.execute(
                 """
-                SELECT id, session_id, role, content, timestamp, rl_used
+                SELECT id, session_id, role, content, timestamp
                 FROM chat_messages
                 WHERE session_id = ?
                 ORDER BY timestamp ASC

@@ -75,7 +75,7 @@ class BotConfig:
     def get(self, key_path: str, default=None):
         """
         Get configuration value using dot notation
-        Example: get('rl_config.n_candidates') returns the n_candidates value
+        Example: get('model.max_tokens') returns the max token value
         """
         keys = key_path.split(".")
         value = self.config
@@ -98,17 +98,9 @@ class BotConfig:
         """Get a prompt from the prompts section"""
         return self.get(f"prompts.{prompt_name}", "")
 
-    def get_rl_config(self, key: str, default=None):
-        """Get RL configuration value"""
-        return self.get(f"rl_config.{key}", default)
-
     def get_model_config(self, key: str, default=None):
         """Get model configuration value"""
         return self.get(f"model.{key}", default)
-
-    def is_rl_enabled(self) -> bool:
-        """Check if RL is enabled"""
-        return self.get("rl_config.enabled", False)
 
 
 class DefaultConfig:
@@ -133,17 +125,10 @@ class DefaultConfig:
                 provider = cls.LLM_PROVIDER.lower()
                 if provider == "groq":
                     cls.API_KEY = config_reader.read_config_value("GROQ_API_KEY")
-                elif provider == "openai":
-                    cls.API_KEY = config_reader.read_config_value("OPENAI_API_KEY")
-                elif provider == "azure":
-                    cls.API_KEY = config_reader.read_config_value("AZURE_OPENAI_API_KEY")
-                elif provider == "anthropic":
-                    cls.API_KEY = config_reader.read_config_value("ANTHROPIC_API_KEY")
                 elif provider == "nvidia":
                     cls.API_KEY = config_reader.read_config_value("NVIDIA_API_KEY")
                 else:
-                    cls.logger.warning(f"Unknown provider: {provider}")
-                    cls.API_KEY = None
+                    raise ValueError(f"Unsupported LLM provider: {provider}")
 
                 # Load bot configuration
                 config_path = os.path.join(os.path.dirname(__file__), "bot_config.yaml")
@@ -153,9 +138,6 @@ class DefaultConfig:
                 cls.logger.info("Config values loaded successfully")
                 cls.logger.info(f"Environment: {cls.ENV}")
                 cls.logger.info(f"LLM Provider: {cls.LLM_PROVIDER}")
-                cls.logger.info(
-                    f"RL Mode: {'Enabled' if cls.bot_config.is_rl_enabled() else 'Disabled'}"
-                )
                 cls._initialised = True
                 cls.logger.info("DefaultConfig initialization complete")
                 cls.logger.info("=" * 80)

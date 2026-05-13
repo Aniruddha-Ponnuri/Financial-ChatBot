@@ -11,11 +11,10 @@ const apiClient = axios.create({
 // API Service object
 const apiService = {
   // Chat endpoints
-  askQuestion: async (question, history, useRL, sessionId) => {
+  askQuestion: async (question, history, sessionId) => {
     const response = await apiClient.post(config.endpoints.ask, {
       question,
       history,
-      use_rl: useRL,
       session_id: sessionId,
     });
     return response.data;

@@ -211,17 +211,6 @@ prompts:
     - Provide practical advice suitable for Indian retail investors
     - Mention both opportunities and risks transparently
 
-# Reinforcement Learning Configuration
-rl_config:
-  enabled: true
-  n_candidates: 4  # Number of candidate responses to generate
-  temperature_min: 0.1 # Minimum temperature for generation diversity
-  temperature_max: 0.5  # Maximum temperature for generation diversity
-  reward_model:
-    embedding_model: "all-MiniLM-L6-v2"  # Sentence transformer model
-    update_batch_size: 10  # Minimum samples before retraining
-    min_samples_for_training: 20  # Minimum feedback samples needed
-  
 # Model Configuration
 model:
   name: "llama-3.1-8b-instant"

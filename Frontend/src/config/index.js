@@ -21,7 +21,6 @@ const config = {
     sessionById: (id) => `/sessions/${id}`,
     feedback: '/feedback',
     health: '/health',
-    candidates: '/candidates',
   },
 
   // Application Settings
@@ -32,7 +31,6 @@ const config = {
 
   // Feature Flags
   features: {
-    rlMode: true,
     sessionPersistence: true,
     feedback: true,
   },

@@ -1,21 +1,13 @@
 """
 LangChain-based LLM Service - Modular provider support
-Supports: OpenAI, Azure OpenAI, Groq, Anthropic, NVIDIA
+Supports: Groq, NVIDIA
 """
 
 import os
 from typing import Optional, List, Dict
-from langchain_openai import ChatOpenAI, AzureChatOpenAI
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_core.language_models.chat_models import BaseChatModel
-
-try:
-    from langchain_anthropic import ChatAnthropic
-
-    ANTHROPIC_AVAILABLE = True
-except ImportError:
-    ANTHROPIC_AVAILABLE = False
 
 try:
     from langchain_nvidia_ai_endpoints import ChatNVIDIA
@@ -26,13 +18,10 @@ except ImportError:
 
 
 class LLMService:
-    """Unified LLM service supporting multiple providers via LangChain"""
+    """Unified LLM service supporting Groq and NVIDIA via LangChain"""
 
     SUPPORTED_PROVIDERS = {
-        "openai": "OpenAI",
-        "azure": "Azure OpenAI",
         "groq": "Groq",
-        "anthropic": "Anthropic",
         "nvidia": "NVIDIA",
     }
 
@@ -48,7 +37,7 @@ class LLMService:
         Initialize LLM service with specified provider
 
         Args:
-            provider: Provider name (openai, azure, groq, anthropic, nvidia)
+            provider: Provider name (groq, nvidia)
             model_name: Model identifier
             temperature: Sampling temperature (0.0-2.0)
             max_tokens: Maximum tokens in response
@@ -76,37 +65,7 @@ class LLMService:
     def _initialize_client(self) -> BaseChatModel:
         """Initialize the appropriate LangChain client based on provider"""
 
-        if self.provider == "openai":
-            api_key = os.getenv("OPENAI_API_KEY")
-            if not api_key:
-                raise ValueError("OPENAI_API_KEY not found in environment")
-
-            return ChatOpenAI(
-                api_key=api_key,
-                model_name=self.model_name,
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-            )
-
-        elif self.provider == "azure":
-            api_key = os.getenv("AZURE_OPENAI_API_KEY")
-            endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-            api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
-            deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", self.model_name)
-
-            if not api_key or not endpoint:
-                raise ValueError("AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT required")
-
-            return AzureChatOpenAI(
-                azure_endpoint=endpoint,
-                api_key=api_key,
-                api_version=api_version,
-                deployment_name=deployment_name,
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-            )
-
-        elif self.provider == "groq":
+        if self.provider == "groq":
             api_key = os.getenv("GROQ_API_KEY")
             if not api_key:
                 raise ValueError("GROQ_API_KEY not found in environment")
@@ -118,23 +77,7 @@ class LLMService:
                 max_tokens=self.max_tokens,
             )
 
-        elif self.provider == "anthropic":
-            if not ANTHROPIC_AVAILABLE:
-                raise ValueError(
-                    "Anthropic support not installed. Run: pip install langchain-anthropic"
-                )
-            api_key = os.getenv("ANTHROPIC_API_KEY")
-            if not api_key:
-                raise ValueError("ANTHROPIC_API_KEY not found in environment")
-
-            return ChatAnthropic(
-                api_key=api_key,
-                model_name=self.model_name,
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-            )
-
-        elif self.provider == "nvidia":
+        if self.provider == "nvidia":
             if not NVIDIA_AVAILABLE:
                 raise ValueError(
                     "NVIDIA support not installed. Run: pip install langchain-nvidia-ai-endpoints"
@@ -149,6 +92,8 @@ class LLMService:
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
             )
+
+        raise ValueError(f"Unsupported provider: {self.provider}")
 
     def generate(
         self,
@@ -312,39 +257,14 @@ class LLMService:
         tokens = max_tokens if max_tokens is not None else self.max_tokens
 
         # Create new instance with overrides
-        if self.provider == "openai":
-            return ChatOpenAI(
-                api_key=os.getenv("OPENAI_API_KEY"),
-                model_name=self.model_name,
-                temperature=temp,
-                max_tokens=tokens,
-            )
-        elif self.provider == "azure":
-            return AzureChatOpenAI(
-                azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-                api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-                api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview"),
-                deployment_name=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", self.model_name),
-                temperature=temp,
-                max_tokens=tokens,
-            )
-        elif self.provider == "groq":
+        if self.provider == "groq":
             return ChatGroq(
                 api_key=os.getenv("GROQ_API_KEY"),
                 model_name=self.model_name,
                 temperature=temp,
                 max_tokens=tokens,
             )
-        elif self.provider == "anthropic":
-            if not ANTHROPIC_AVAILABLE:
-                raise ValueError("Anthropic support not installed")
-            return ChatAnthropic(
-                api_key=os.getenv("ANTHROPIC_API_KEY"),
-                model_name=self.model_name,
-                temperature=temp,
-                max_tokens=tokens,
-            )
-        elif self.provider == "nvidia":
+        if self.provider == "nvidia":
             if not NVIDIA_AVAILABLE:
                 raise ValueError("NVIDIA support not installed")
             return ChatNVIDIA(
@@ -360,18 +280,13 @@ class LLMService:
         Create LLMService instance from environment variables
 
         Required env vars:
-            - LLM_PROVIDER: openai, azure, groq, anthropic, or nvidia
+            - LLM_PROVIDER: groq or nvidia
             - LLM_MODEL_NAME: Model identifier
             - LLM_TEMPERATURE: Temperature (default 0.7)
             - LLM_MAX_TOKENS: Max tokens (default 2000)
 
         Provider-specific env vars:
-            OpenAI: OPENAI_API_KEY
-            Azure: AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT,
-                   AZURE_OPENAI_API_VERSION (optional),
-                   AZURE_OPENAI_DEPLOYMENT_NAME (optional)
             Groq: GROQ_API_KEY
-            Anthropic: ANTHROPIC_API_KEY
             NVIDIA: NVIDIA_API_KEY
 
         Raises:
@@ -392,6 +307,12 @@ class LLMService:
 
             if logger:
                 logger.info(f"Provider: {provider}")
+
+            if provider.lower() not in ("groq", "nvidia"):
+                error_msg = f"Unsupported LLM_PROVIDER: {provider}"
+                if logger:
+                    logger.error(error_msg)
+                raise ValueError(error_msg)
 
             model_name = os.getenv("LLM_MODEL_NAME")
             if not model_name:
@@ -435,22 +356,21 @@ class LLMService:
             if logger:
                 logger.info(f"Max Tokens: {max_tokens}")
 
-            # Azure-specific validation
-            if provider.lower() == "azure":
-                endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-                if logger:
-                    logger.info(f"Azure Endpoint: {endpoint if endpoint else 'NOT SET'}")
-                if not endpoint:
-                    error_msg = "AZURE_OPENAI_ENDPOINT required for Azure provider"
-                    if logger:
-                        logger.error(error_msg)
-                    raise ValueError(error_msg)
-            elif provider.lower() == "nvidia":
+            if provider.lower() == "nvidia":
                 nvidia_key = os.getenv("NVIDIA_API_KEY")
                 if logger:
                     logger.info(f"NVIDIA API Key: {'SET' if nvidia_key else 'NOT SET'}")
                 if not nvidia_key:
                     error_msg = "NVIDIA_API_KEY required for NVIDIA provider"
+                    if logger:
+                        logger.error(error_msg)
+                    raise ValueError(error_msg)
+            elif provider.lower() == "groq":
+                groq_key = os.getenv("GROQ_API_KEY")
+                if logger:
+                    logger.info(f"Groq API Key: {'SET' if groq_key else 'NOT SET'}")
+                if not groq_key:
+                    error_msg = "GROQ_API_KEY required for Groq provider"
                     if logger:
                         logger.error(error_msg)
                     raise ValueError(error_msg)

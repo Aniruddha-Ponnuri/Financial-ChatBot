@@ -13,7 +13,6 @@ const Chatbot = () => {
   const [conversation, setConversation] = useState([]);
   const [summarizedHistory, setSummarizedHistory] = useState('');
   const [loading, setLoading] = useState(false);
-  const [useRL, setUseRL] = useState(true);
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [feedbackGiven, setFeedbackGiven] = useState({});
@@ -116,13 +115,12 @@ const Chatbot = () => {
       setConversation(newConversation);
       setQuestion('');
 
-      const data = await apiService.askQuestion(userQuestion, summarizedHistory, useRL, sessionId);
+      const data = await apiService.askQuestion(userQuestion, summarizedHistory, sessionId);
 
       const assistantMessage = {
         role: 'assistant',
         content: data.answer,
         question: userQuestion,
-        rlUsed: data.rl_used || false,
         timestamp: Date.now(),
       };
 
@@ -201,20 +199,6 @@ const Chatbot = () => {
                 ☰
               </button>
               <h2>Financial Chatbot</h2>
-              <div className="rl-toggle">
-                <label className="toggle-label">
-                  <input
-                    type="checkbox"
-                    checked={useRL}
-                    onChange={(e) => setUseRL(e.target.checked)}
-                    className="toggle-input"
-                  />
-                  <span className="toggle-slider"></span>
-                  <span className="toggle-text">
-                    {useRL ? '🤖 RL Mode' : '💬 Standard Mode'}
-                  </span>
-                </label>
-              </div>
             </div>
           </div>
 
@@ -284,11 +268,6 @@ const Chatbot = () => {
                         >
                           <ThumbsDown size={16} />
                         </button>
-                        {msg.rlUsed && (
-                          <span className="rl-badge" title="Response generated using RL">
-                            🤖 RL
-                          </span>
-                        )}
                       </div>
                     )}
                   </div>

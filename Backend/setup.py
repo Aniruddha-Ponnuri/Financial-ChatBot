@@ -54,8 +54,7 @@ def main():
         packages = [
             "flask flask-cors python-dotenv pyyaml",
             "langchain langchain-core",
-            "langchain-openai langchain-groq langchain-nvidia-ai-endpoints",
-            "torch transformers sentence-transformers",
+            "langchain-groq langchain-nvidia-ai-endpoints",
             "yfinance numpy",
         ]
 
