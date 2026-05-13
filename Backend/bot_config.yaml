@@ -88,12 +88,6 @@ prompts:
     
     Title:
   
-  parsing_prompt_template: |
-    Parse the following content and return it formatted as HTML (use <b> for bold, <br> for line breaks, and <ul> for bullet points):
-    """{content}"""
-    
-    {parse_description}
-  
   # Stock symbol extraction prompt (supports both Indian and international stocks)
   stock_symbol_extraction_prompt: |
     Extract stock ticker symbols or company names from the following question. 

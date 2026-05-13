@@ -52,9 +52,6 @@ const apiService = {
     const response = await apiClient.get(config.endpoints.health);
     return response.data;
   },
-
-  // Get current API base URL (useful for debugging)
-  getBaseURL: () => config.api.baseURL,
 };
 
 // Error interceptor
