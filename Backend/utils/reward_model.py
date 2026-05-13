@@ -2,12 +2,6 @@
 
 This module provides a small, production-minded wrapper around a
 sentence-transformer embedding model and an incremental
-``sklearn.linear_model.SGDClassifier`` trained with ``partial_fit``.
-
-Key improvements:
-- thread-safety around model access
-- safer persistence using ``joblib`` when available
-- defensive checks for ``predict_proba`` availability
 """
 
 from __future__ import annotations
